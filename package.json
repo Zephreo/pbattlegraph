@@ -1,0 +1,12 @@
+{
+  "name": "pbattlegraph",
+  "version": "1.0.0",
+  "description": "Pokemon Battle Planner",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}

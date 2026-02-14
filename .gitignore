@@ -1,2 +1,22 @@
+# Dependencies
+node_modules/
+
+# Build output (compiled TypeScript)
+minimax.js
+
+# Sprites
 /sprites
+
+# OS files
 .DS_Store
+Thumbs.db
+
+# Editor directories
+.idea/
+.vscode/
+.claude/
+*.swp
+*.swo
+
+# Logs
+npm-debug.log*
