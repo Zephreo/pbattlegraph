@@ -1994,6 +1994,8 @@ function calculateMatchupScore(mySlot, enemySlot) {
     if (myMoves.length > 0) {
         myMoves.forEach(move => {
             const damage = calculateActualDamage(move, myPokemon, enemyPokemon, {
+                level: myPokemon.level,
+                defenderLevel: enemyPokemon.level,
                 attackerTeraType: mySlot.teraType,
                 defenderTeraType: enemySlot.teraType,
                 attackerAbility: mySlot.ability,
@@ -2013,6 +2015,8 @@ function calculateMatchupScore(mySlot, enemySlot) {
                 category: (myPokemon.attack || 100) >= (myPokemon.spAtk || 100) ? 'physical' : 'special'
             };
             const damage = calculateActualDamage(pseudoMove, myPokemon, enemyPokemon, {
+                level: myPokemon.level,
+                defenderLevel: enemyPokemon.level,
                 attackerTeraType: mySlot.teraType,
                 defenderTeraType: enemySlot.teraType,
                 attackerAbility: mySlot.ability,
@@ -2914,8 +2918,8 @@ function calculateActualDamage(move, attacker, defender, options = {}) {
     }
 
     const {
-        level = 50,                    // Attacker level (VGC = 50, Smogon = 100)
-        defenderLevel = null,          // Defender level (if different, defaults to attacker level)
+        level = attacker.level || 50,
+        defenderLevel = defender.level || null,
         attackerTeraType = null,
         defenderTeraType = null,
         attackerAbility = null,
@@ -4227,9 +4231,13 @@ function renderSimulationView() {
     // Evaluate current state immediately for eval bar
     evaluateCurrentSimState(simState);
 
-    // Use minimax to recommend best action for my team only
-    // Enemy team uses simple best-move highlighting (already rendered in move panel)
+    // Use minimax to recommend best action
     updateActionRecommendations('my', simState);
+
+    // In PvP mode, also run minimax for enemy team
+    if (MINIMAX_CONFIG.pvpMode) {
+        updateActionRecommendations('enemy', simState);
+    }
 }
 
 function autoSelectChargingMoves() {
@@ -4382,10 +4390,10 @@ function renderSimMovePanel(containerId, attackerSlot, defenderSlot, team, charg
     }
 
     const moves = attackerSlot.moves || [];
-    // Only show simple best-move highlight for enemy team; my team uses minimax recommendation
+    // Only show simple best-move highlight for enemy team in PvE mode; PvP mode uses minimax for both
     let bestMoveIndex = -1;
     let shouldHighlightSwap = false;
-    if (team === 'enemy') {
+    if (team === 'enemy' && !MINIMAX_CONFIG.pvpMode) {
         const bestAction = getBestMoveForSimulation(attackerSlot, defenderSlot);
         bestMoveIndex = bestAction.moveIndex;
         shouldHighlightSwap = bestAction.shouldSwap;
@@ -4924,19 +4932,19 @@ function executeSwap(team, targetIndex) {
 
 function executeMoveAction(team, action, isChargingRelease = false) {
     const simState = state.simulationState;
-    const attackerSlot = team === 'my'
+    const attacker = team === 'my'
         ? state.myTeam[simState.myActiveIndex]
         : state.enemyTeam[simState.enemyActiveIndex];
-    const defenderSlot = team === 'my'
+    const defender = team === 'my'
         ? state.enemyTeam[simState.enemyActiveIndex]
         : state.myTeam[simState.myActiveIndex];
 
-    if (!attackerSlot || !attackerSlot.pokemon || !defenderSlot || !defenderSlot.pokemon) return;
+    if (!attacker || !attacker.pokemon || !defender || !defender.pokemon) return;
     if (!action.move) return;
 
     const move = action.move;
-    const attackerName = attackerSlot.pokemon.name;
-    const defenderName = defenderSlot.pokemon.name;
+    const attackerName = attacker.pokemon.name;
+    const defenderName = defender.pokemon.name;
 
     // Check if this is a two-turn move and we're not releasing
     const isTwoTurn = moveHasEffect(move, 'two_turn_move');
@@ -4966,12 +4974,14 @@ function executeMoveAction(team, action, isChargingRelease = false) {
         // Get defender's status for abilities like Marvel Scale
         const defenderStatus = team === 'my' ? simState.enemyStatus : simState.myStatus;
 
-        const damage = calculateActualDamage(move, attackerSlot.pokemon, defenderSlot.pokemon, {
-            attackerTeraType: attackerSlot.teraType,
-            defenderTeraType: defenderSlot.teraType,
-            attackerAbility: attackerSlot.ability,
-            defenderAbility: defenderSlot.ability,
-            attackerItem: attackerSlot.item,
+        const damage = calculateActualDamage(move, attacker.pokemon, defender.pokemon, {
+            level: attacker.level,
+            defenderLevel: defender.level,
+            attackerTeraType: attacker.teraType,
+            defenderTeraType: defender.teraType,
+            attackerAbility: attacker.ability,
+            defenderAbility: defender.ability,
+            attackerItem: attacker.item,
             defenderStatus: defenderStatus
         });
 
@@ -5003,7 +5013,7 @@ function executeMoveAction(team, action, isChargingRelease = false) {
         }
 
         // Apply post-attack ability effects (Rough Skin, Iron Barbs, etc.)
-        const abilityEffects = applyPostAttackAbilityEffects(move, attackerSlot.ability, defenderSlot.ability);
+        const abilityEffects = applyPostAttackAbilityEffects(move, attacker.ability, defender.ability);
 
         if (abilityEffects.attackerRecoil > 0) {
             const attackerMaxHP = team === 'my' ? simState.myMaxHP : simState.enemyMaxHP;
@@ -5037,13 +5047,13 @@ function executeMoveAction(team, action, isChargingRelease = false) {
     // Apply stat change effects (both damaging moves with effects and status moves)
     if (move.effect && move.effectChance) {
         // Check if defender's ability blocks this effect (e.g., Inner Focus blocks flinch)
-        if (abilityBlocksEffect(defenderSlot.ability, move.effect)) {
+        if (abilityBlocksEffect(defender.ability, move.effect)) {
             // Effect blocked by ability - don't apply
             return;
         }
 
         // Apply ability effects to effect chance (e.g., Serene Grace)
-        const effectiveChance = applyAbilityToEffectChance(attackerSlot.ability, move.effectChance);
+        const effectiveChance = applyAbilityToEffectChance(attacker.ability, move.effectChance);
 
         // Check if effect triggers (100% for guaranteed, otherwise random)
         const triggers = effectiveChance >= 100 || Math.random() * 100 < effectiveChance;
@@ -5189,12 +5199,14 @@ function openSimSwapModal(team) {
         swapOptions.push({ slot, index, matchupScore });
     });
 
-    // For my team: compute best swap using minimax evaluation
+    // Compute best swap using minimax evaluation (for my team always, for enemy in PvP mode)
     let minimaxSwapIndex = -1;
-    if (team === 'my') {
+    const useMinimaxForTeam = team === 'my' || (team === 'enemy' && MINIMAX_CONFIG.pvpMode);
+    if (useMinimaxForTeam) {
         // Check if we have a stored swap recommendation
-        if (minimaxState.currentRecommendation && minimaxState.currentRecommendation.type === 'swap') {
-            const storedIndex = minimaxState.currentRecommendation.swapIndex;
+        const recommendation = team === 'my' ? minimaxState.currentRecommendation : minimaxState.enemyRecommendation;
+        if (recommendation && recommendation.type === 'swap') {
+            const storedIndex = recommendation.swapIndex;
             // Validate that swapIndex is a valid number
             if (typeof storedIndex === 'number' && storedIndex >= 0 && storedIndex < BATTLE_TEAM_SIZE) {
                 minimaxSwapIndex = storedIndex;
@@ -5228,7 +5240,7 @@ function openSimSwapModal(team) {
         ).join('');
 
         const isBest = index === bestIndex;
-        const isMinimaxPick = team === 'my' && index === minimaxSwapIndex;
+        const isMinimaxPick = useMinimaxForTeam && index === minimaxSwapIndex;
         const scoreClass = matchupScore >= 70 ? 'score-great' : matchupScore >= 50 ? 'score-good' : 'score-poor';
 
         // Get HP for this Pokemon
@@ -5321,6 +5333,24 @@ function setupSimulationEventListeners() {
     const resetBtn = document.getElementById('sim-reset-btn');
     if (resetBtn) {
         resetBtn.addEventListener('click', resetSimulation);
+    }
+
+    // PvP mode toggle
+    const pvpToggle = document.getElementById('sim-pvp-toggle');
+    if (pvpToggle) {
+        pvpToggle.addEventListener('change', (e) => {
+            const enabled = e.target.checked;
+            setPvPMode(enabled);
+
+            // Update toggle UI
+            const toggleContainer = document.querySelector('.sim-mode-toggle');
+            if (toggleContainer) {
+                toggleContainer.classList.toggle('pvp-mode', enabled);
+            }
+
+            // Re-render to apply new mode
+            renderSimulationView();
+        });
     }
 
     // Undo button

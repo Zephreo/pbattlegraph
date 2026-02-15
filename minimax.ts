@@ -150,9 +150,12 @@ interface CancellationToken {
 
 interface MinimaxStateType {
     activeCalculation: CancellationToken | null;
+    enemyActiveCalculation: CancellationToken | null;
     isCalculating: boolean;
     myProgress: MinimaxProgress;
+    enemyProgress: MinimaxProgress;
     currentRecommendation: ScoredAction | null;
+    enemyRecommendation: ScoredAction | null;
     damageCache: Map<number, DamageResult>;
     matchupCache: Map<string, number>;
     transpositionTable: Map<string, number>;
@@ -180,20 +183,31 @@ declare function getMovePriority(move: Move): number;
 // MINIMAX CONFIGURATION
 // ============================================
 
-const MINIMAX_CONFIG = {
-    depth: 6,
+const MINIMAX_CONFIG: {
+    depth: number;
+    pruningEnabled: boolean;
+    yieldInterval: number;
+    opponentGreedy: boolean;
+    moveOrdering: boolean;
+    pvpMode: boolean;
+} = {
+    depth: 7,
     pruningEnabled: true,
     yieldInterval: 5000,
     opponentGreedy: true,
-    moveOrdering: true
-} as const;
+    moveOrdering: true,
+    pvpMode: false
+};
 
-// Track active minimax calculation (only one at a time for my team)
+// Track active minimax calculations for both teams
 const minimaxState: MinimaxStateType = {
     activeCalculation: null,
+    enemyActiveCalculation: null,
     isCalculating: false,
     myProgress: { current: 0, total: 0, depth: 0 },
+    enemyProgress: { current: 0, total: 0, depth: 0 },
     currentRecommendation: null,
+    enemyRecommendation: null,
     damageCache: new Map(),
     matchupCache: new Map(),
     transpositionTable: new Map()
@@ -357,6 +371,29 @@ function getGreedyOpponentAction(simCopy: SimCopy): Action | null {
             bestOppAction = oppAction;
         }
     }
+
+    // State summary log
+    const myTeamSummary = simCopy.myTeam.map((slot, i) => {
+        if (!slot?.pokemon) return null;
+        const hp = simCopy.myTeamHP[i];
+        const hpStr = hp ? `${hp.current}/${hp.max}` : '?';
+        const active = i === simCopy.myActiveIndex ? '*' : ' ';
+        return `${active}${slot.pokemon.name}(${hpStr})`;
+    }).filter(Boolean).join(', ');
+
+    const oppTeamSummary = simCopy.oppTeam.map((slot, i) => {
+        if (!slot?.pokemon) return null;
+        const hp = simCopy.oppTeamHP[i];
+        const hpStr = hp ? `${hp.current}/${hp.max}` : '?';
+        const active = i === simCopy.oppActiveIndex ? '*' : ' ';
+        return `${active}${slot.pokemon.name}(${hpStr})`;
+    }).filter(Boolean).join(', ');
+
+    const actionStr = bestOppAction
+        ? (bestOppAction.type === 'move' ? (bestOppAction as MoveAction).moveName : bestOppAction.type)
+        : 'none';
+
+    console.log(`[GreedyOpp]\n  My:  [${myTeamSummary}]\n  Opp: [${oppTeamSummary}]\n  Best: ${actionStr} (score: ${bestOppScore.toFixed(1)})`);
 
     return bestOppAction;
 }
@@ -797,16 +834,17 @@ function evaluateState(simCopy: SimCopy): number {
     const oppHPPercent = simCopy.oppMaxHP > 0 ? (simCopy.oppHP / simCopy.oppMaxHP) * 100 : 0;
     score += (myHPPercent - oppHPPercent) * 2;
 
-    if (simCopy.oppHP <= 0) score += 100;
-    if (simCopy.myHP <= 0) score -= 100;
+    if (simCopy.oppHP <= 0) score += 1000;
+    if (simCopy.myHP <= 0) score -= 1000;
 
-    let myTeamTotal = 0, myTeamMax = 0;
-    let oppTeamTotal = 0, oppTeamMax = 0;
+    let myTeamTotal = 0, myTeamMax = 0, myAlive = 0;
+    let oppTeamTotal = 0, oppTeamMax = 0, oppAlive = 0;
 
     simCopy.myTeamHP.forEach(hp => {
         if (hp) {
             myTeamTotal += hp.current;
             myTeamMax += hp.max;
+            if (hp.current > 0) myAlive++;
         }
     });
 
@@ -814,12 +852,17 @@ function evaluateState(simCopy: SimCopy): number {
         if (hp) {
             oppTeamTotal += hp.current;
             oppTeamMax += hp.max;
+            if (hp.current > 0) oppAlive++;
         }
     });
 
     const myTeamPercent = myTeamMax > 0 ? (myTeamTotal / myTeamMax) * 100 : 0;
     const oppTeamPercent = oppTeamMax > 0 ? (oppTeamTotal / oppTeamMax) * 100 : 0;
     score += (myTeamPercent - oppTeamPercent) * 0.5;
+
+    // Factor in number of alive Pokemon (significant advantage)
+    const aliveDiff = myAlive - oppAlive;
+    score += aliveDiff * 25;
 
     if (simCopy.mySlot && simCopy.oppSlot && simCopy.mySlot.pokemon && simCopy.oppSlot.pokemon) {
         const matchup = getCachedMatchupScore(simCopy.mySlot, simCopy.oppSlot);
@@ -828,6 +871,28 @@ function evaluateState(simCopy: SimCopy): number {
 
     if (simCopy.myCharging) score -= 20;
     if (simCopy.oppCharging) score += 20;
+
+    if (oppTeamTotal <= 0) score = (10000 * myTeamPercent);
+    if (myTeamTotal <= 0) score = -(10000 * oppTeamPercent);
+
+    // State summary log
+    const myTeamSummary = simCopy.myTeam.map((slot, i) => {
+        if (!slot?.pokemon) return null;
+        const hp = simCopy.myTeamHP[i];
+        const hpStr = hp ? `${hp.current}/${hp.max}` : '?';
+        const active = i === simCopy.myActiveIndex ? '*' : ' ';
+        return `${active}${slot.pokemon.name}(${hpStr})`;
+    }).filter(Boolean).join(', ');
+
+    const oppTeamSummary = simCopy.oppTeam.map((slot, i) => {
+        if (!slot?.pokemon) return null;
+        const hp = simCopy.oppTeamHP[i];
+        const hpStr = hp ? `${hp.current}/${hp.max}` : '?';
+        const active = i === simCopy.oppActiveIndex ? '*' : ' ';
+        return `${active}${slot.pokemon.name}(${hpStr})`;
+    }).filter(Boolean).join(', ');
+
+    console.log(`[Eval]\n  My:  [${myTeamSummary}]\n  Opp: [${oppTeamSummary}]\n  Score: ${score.toFixed(1)}`);
 
     return score;
 }
@@ -983,7 +1048,8 @@ async function minimaxAsync(simCopy: SimCopy, myAction: Action, depth: number, a
 
         const actions = getAllPossibleActions(newState, !isMaximizing);
 
-        if (!isMaximizing) {
+        if (isMaximizing) {
+            // Our turn: maximize score, update alpha
             let maxScore = -Infinity;
             for (const nextAction of actions) {
                 const score = await minimaxAsync(newState, nextAction, depth - 1, alpha, beta, false);
@@ -995,6 +1061,7 @@ async function minimaxAsync(simCopy: SimCopy, myAction: Action, depth: number, a
             }
             result = maxScore;
         } else {
+            // Opponent's turn: minimize score, update beta
             let minScore = Infinity;
             for (const nextAction of actions) {
                 const score = await minimaxAsync(newState, nextAction, depth - 1, alpha, beta, true);
@@ -1099,7 +1166,8 @@ function minimax(simCopy: SimCopy, myAction: Action, depth: number, alpha: numbe
 
         const actions = getAllPossibleActions(newState, !isMaximizing);
 
-        if (!isMaximizing) {
+        if (isMaximizing) {
+            // Our turn: maximize score, update alpha
             let maxScore = -Infinity;
             for (const nextAction of actions) {
                 const score = minimax(newState, nextAction, depth - 1, alpha, beta, false);
@@ -1111,6 +1179,7 @@ function minimax(simCopy: SimCopy, myAction: Action, depth: number, alpha: numbe
             }
             result = maxScore;
         } else {
+            // Opponent's turn: minimize score, update beta
             let minScore = Infinity;
             for (const nextAction of actions) {
                 const score = minimax(newState, nextAction, depth - 1, alpha, beta, true);
@@ -1204,6 +1273,7 @@ function evaluateCurrentSimState(simState: SimState): void {
         updateEvalBar(0);
         return;
     }
+    // Use static evaluation as initial estimate; minimax will update when ready
     const score = evaluateState(simCopy);
     updateEvalBar(score);
 }
@@ -1250,22 +1320,40 @@ function updateEvalBar(score: number): void {
     } else {
         evalBarScore.classList.add('even');
     }
+
+    console.log(`[EvalBar] Score: ${score.toFixed(1)} | Display: ${prefix}${displayScore} | My: ${myPercent.toFixed(0)}% | Opp: ${enemyPercent.toFixed(0)}%`);
 }
 
 function updateActionRecommendations(team: string, simState: SimState): void {
-    if (team !== 'my') return;
+    // Only allow enemy team recommendations in PvP mode
+    if (team === 'enemy' && !MINIMAX_CONFIG.pvpMode) return;
 
-    if (minimaxState.activeCalculation) {
-        minimaxState.activeCalculation.cancelled = true;
+    // Cancel previous calculation for this team
+    if (team === 'my') {
+        if (minimaxState.activeCalculation) {
+            minimaxState.activeCalculation.cancelled = true;
+        }
+    } else {
+        if (minimaxState.enemyActiveCalculation) {
+            minimaxState.enemyActiveCalculation.cancelled = true;
+        }
     }
 
     const quickRec = getMinimaxRecommendation(team, simState, 1);
     if (quickRec) {
         showIntermediateRecommendation(team, quickRec, 1, MINIMAX_CONFIG.depth);
+        // Update eval bar with quick minimax score for 'my' team
+        if (team === 'my' && quickRec.score !== undefined) {
+            updateEvalBar(quickRec.score);
+        }
     }
 
     const calcToken: CancellationToken = { cancelled: false };
-    minimaxState.activeCalculation = calcToken;
+    if (team === 'my') {
+        minimaxState.activeCalculation = calcToken;
+    } else {
+        minimaxState.enemyActiveCalculation = calcToken;
+    }
 
     getMinimaxRecommendationAsync(team, simState, MINIMAX_CONFIG.depth).then(recommendation => {
         if (calcToken.cancelled) return;
@@ -1280,8 +1368,29 @@ function updateActionRecommendations(team: string, simState: SimState): void {
 
         if (!recommendation) return;
 
+        // Store recommendation for the appropriate team
+        if (team === 'my') {
+            minimaxState.currentRecommendation = recommendation;
+            // Update eval bar with final minimax score
+            if (recommendation.score !== undefined) {
+                updateEvalBar(recommendation.score);
+            }
+        } else {
+            minimaxState.enemyRecommendation = recommendation;
+        }
+
         showIntermediateRecommendation(team, recommendation, MINIMAX_CONFIG.depth, MINIMAX_CONFIG.depth);
     });
+}
+
+function setPvPMode(enabled: boolean): void {
+    MINIMAX_CONFIG.pvpMode = enabled;
+    MINIMAX_CONFIG.opponentGreedy = !enabled;
+
+    // Clear caches when switching modes
+    minimaxState.transpositionTable.clear();
+    minimaxState.damageCache.clear();
+    minimaxState.matchupCache.clear();
 }
 
 function computeBestSwapIndex(simState: SimState, swapOptions: SwapOption[]): number {
