@@ -435,12 +435,13 @@
                     depth,
                     timeMs: duration.toFixed(2),
                     cacheEntries: minimaxState.transpositionTable.size,
+                    nodesEvaluated: result?.nodesEvaluated ?? 0,
                     bestMove: result?.type === 'move' ? result.moveName : result?.type,
                     score: result?.score?.toFixed(2)
                 };
 
                 results.push(row);
-                log(`Depth ${depth}: ${duration.toFixed(2)}ms | ${row.bestMove} (${row.score})`);
+                log(`Depth ${depth}: ${duration.toFixed(2)}ms | ${row.bestMove} (${row.score}) | Nodes: ${row.nodesEvaluated}`);
 
                 if (duration > 10000) {
                     log('Stopping - exceeded 10s threshold', 'fail');

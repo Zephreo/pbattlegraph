@@ -49,7 +49,7 @@ const MOVES_DATA = [
     { name: "Tera Blast", type: "normal", category: "special", power: 80, accuracy: 100, effect: "uses_higher_attack_stat", effectChance: 100, description: "If the user has Terastallized, it unleashes energy of its Tera Type. This move inflicts damage using the Attack or Sp. Atk stat—whichever is higher for the user." },
     { name: "Raging Bull", type: "normal", category: "physical", power: 90, accuracy: 100, effect: "type_varies_by_form", effectChance: 100, description: "The user performs a tackle like a raging bull. This move's type depends on the user's form." },
     { name: "Blood Moon", type: "normal", category: "special", power: 140, accuracy: 100, effect: "cannot_use_twice", effectChance: 100, description: "The user unleashes the full brunt of its spirit from a full moon that shines as red as blood. This move can't be used twice in a row." },
-    
+
     // Fire Type Moves
     { name: "Ember", type: "fire", category: "special", power: 40, accuracy: 100, effect: "burn", effectChance: 10, description: "The target is attacked with small flames. This may also leave the target with a burn." },
     { name: "Flamethrower", type: "fire", category: "special", power: 90, accuracy: 100, effect: "burn", effectChance: 10, description: "The target is scorched with an intense blast of fire. This may also leave the target with a burn." },
@@ -78,7 +78,7 @@ const MOVES_DATA = [
     { name: "Bitter Blade", type: "fire", category: "physical", power: 90, accuracy: 100, effect: "drain_hp", effectChance: 100, description: "The user focuses its bitter feelings toward the world of the living into a slashing attack. The user's HP is restored by up to half the damage taken by the target." },
     { name: "Armor Cannon", type: "fire", category: "special", power: 120, accuracy: 100, effect: "lowers_user_def_spdef", effectChance: 100, description: "The user shoots its own armor out as blazing projectiles. This also lowers the user's Defense and Sp. Def stats." },
     { name: "Torch Song", type: "fire", category: "special", power: 80, accuracy: 100, effect: "raises_user_sp_atk", effectChance: 100, description: "The user blows out raging flames as if singing a song, scorching the target. This also boosts the user's Sp. Atk stat." },
-    
+
     // Water Type Moves
     { name: "Water Gun", type: "water", category: "special", power: 40, accuracy: 100, effect: null, effectChance: 0, description: "The target is blasted with a forceful shot of water." },
     { name: "Bubble", type: "water", category: "special", power: 40, accuracy: 100, effect: "lowers_speed", effectChance: 10, description: "A spray of countless bubbles is jetted at the opposing Pokémon. This may also lower their Speed stat." },
@@ -102,7 +102,7 @@ const MOVES_DATA = [
     { name: "Wave Crash", type: "water", category: "physical", power: 120, accuracy: 100, effect: "recoil", effectChance: 100, description: "The user shrouds itself in water and slams into the target with its whole body to inflict damage. This also damages the user quite a lot." },
     { name: "Jet Punch", type: "water", category: "physical", power: 60, accuracy: 100, effect: "priority", effectChance: 100, description: "The user summons a torrent around its fist and punches at blinding speed. This move always goes first." },
     { name: "Flip Turn", type: "water", category: "physical", power: 60, accuracy: 100, effect: "switch_out", effectChance: 100, description: "After making its attack, the user rushes back to switch places with a party Pokémon in waiting." },
-    
+
     // Electric Type Moves
     { name: "Thunder Shock", type: "electric", category: "special", power: 40, accuracy: 100, effect: "paralysis", effectChance: 10, description: "A jolt of electricity crashes down on the target to inflict damage. This may also leave the target with paralysis." },
     { name: "Shock Wave", type: "electric", category: "special", power: 60, accuracy: 100, effect: "never_misses", effectChance: 100, description: "The user strikes the target with a quick jolt of electricity. This attack never misses." },
@@ -129,7 +129,7 @@ const MOVES_DATA = [
     { name: "Thunder Cage", type: "electric", category: "special", power: 80, accuracy: 90, effect: "trap", effectChance: 100, description: "The user traps the target in a cage of sparking electricity for four to five turns." },
     { name: "Electro Drift", type: "electric", category: "special", power: 100, accuracy: 100, effect: "super_effective_boost", effectChance: 100, description: "The user races forward at ultrafast speeds, piercing its target with futuristic electricity. This move's power is boosted more than usual if it's a supereffective hit." },
     { name: "Double Shock", type: "electric", category: "physical", power: 120, accuracy: 100, effect: "lose_electric_type", effectChance: 100, description: "The user discharges all the electricity from its body to perform a high-damage attack. After using this move, the user will no longer be Electric type." },
-    
+
     // Grass Type Moves
     { name: "Vine Whip", type: "grass", category: "physical", power: 45, accuracy: 100, effect: null, effectChance: 0, description: "The target is struck with slender, whiplike vines to inflict damage." },
     { name: "Razor Leaf", type: "grass", category: "physical", power: 55, accuracy: 95, effect: "high_critical_hit", effectChance: 100, description: "Sharp-edged leaves are launched to slash at opposing Pokémon. Critical hits land more easily." },
@@ -156,7 +156,7 @@ const MOVES_DATA = [
     { name: "Trailblaze", type: "grass", category: "physical", power: 50, accuracy: 100, effect: "raises_user_speed", effectChance: 100, description: "The user attacks suddenly as if leaping out from tall grass. The user's nimble footwork boosts its Speed stat." },
     { name: "Flower Trick", type: "grass", category: "physical", power: 70, accuracy: 100, effect: "never_misses_always_crit", effectChance: 100, description: "The user throws a rigged bouquet of flowers at the target. This attack never misses and always lands a critical hit." },
     { name: "Syrup Bomb", type: "grass", category: "special", power: 60, accuracy: 85, effect: "lowers_speed_3_turns", effectChance: 100, description: "The user sets off an explosion of sticky candy syrup, which coats the target and causes the target's Speed stat to drop each turn for three turns." },
-    
+
     // Ice Type Moves
     { name: "Ice Beam", type: "ice", category: "special", power: 90, accuracy: 100, effect: "freeze", effectChance: 10, description: "The target is struck with an icy-cold beam of energy. This may also leave the target frozen." },
     { name: "Blizzard", type: "ice", category: "special", power: 110, accuracy: 70, effect: "freeze", effectChance: 10, description: "A howling blizzard is summoned to strike opposing Pokémon. This may also leave the opposing Pokémon frozen." },
@@ -175,7 +175,7 @@ const MOVES_DATA = [
     { name: "Triple Axel", type: "ice", category: "physical", power: 20, accuracy: 90, effect: "hits_three_times_increasing", effectChance: 100, description: "A consecutive three-kick attack that becomes more powerful with each successful hit." },
     { name: "Icicle Spear", type: "ice", category: "physical", power: 25, accuracy: 100, effect: "multi_hit_2_to_5", effectChance: 100, description: "The user launches sharp icicles at the target two to five times in a row." },
     { name: "Ice Spinner", type: "ice", category: "physical", power: 80, accuracy: 100, effect: "removes_terrain", effectChance: 100, description: "The user covers its feet in thin ice and twirls around, slamming into the target. This move's spinning motion also destroys the terrain." },
-    
+
     // Fighting Type Moves
     { name: "Karate Chop", type: "fighting", category: "physical", power: 50, accuracy: 100, effect: "high_critical_hit", effectChance: 100, description: "The target is attacked with a sharp chop. Critical hits land more easily." },
     { name: "Low Kick", type: "fighting", category: "physical", power: 1, accuracy: 100, effect: "power_scales_with_weight", effectChance: 100, description: "A powerful low kick that makes the target fall over. The heavier the target, the greater the move's power." },
@@ -201,7 +201,7 @@ const MOVES_DATA = [
     { name: "Body Press", type: "fighting", category: "physical", power: 80, accuracy: 100, effect: "uses_user_defense", effectChance: 100, description: "The user attacks by slamming its body into the target. The higher the user's Defense, the more damage it can inflict on the target." },
     { name: "Thunderous Kick", type: "fighting", category: "physical", power: 90, accuracy: 100, effect: "lowers_defense", effectChance: 100, description: "The user overwhelms the target with lightning-like movement before delivering a kick. This also lowers the target's Defense stat." },
     { name: "Collision Course", type: "fighting", category: "physical", power: 100, accuracy: 100, effect: "super_effective_boost", effectChance: 100, description: "The user transforms and crashes down onto the target. This move's power is boosted more than usual if it's a supereffective hit." },
-    
+
     // Poison Type Moves
     { name: "Poison Sting", type: "poison", category: "physical", power: 15, accuracy: 100, effect: "poison", effectChance: 30, description: "The user stabs the target with a poisonous stinger. This may also poison the target." },
     { name: "Sludge Bomb", type: "poison", category: "special", power: 90, accuracy: 100, effect: "poison", effectChance: 30, description: "Unsanitary sludge is hurled at the target. This may also poison the target." },
@@ -219,7 +219,7 @@ const MOVES_DATA = [
     { name: "Dire Claw", type: "poison", category: "physical", power: 80, accuracy: 100, effect: "poison_paralysis_sleep", effectChance: 50, description: "The user lashes out at the target with ruinous claws. This may also leave the target poisoned, paralyzed, or asleep." },
     { name: "Mortal Spin", type: "poison", category: "physical", power: 30, accuracy: 100, effect: "poison_removes_hazards", effectChance: 100, description: "The user performs a spin attack that can also eliminate the effects of binding moves and Leech Seed. This also poisons opposing Pokémon." },
     { name: "Noxious Torque", type: "poison", category: "physical", power: 100, accuracy: 100, effect: "poison", effectChance: 30, description: "The user revs their engine and crashes into the target. This may also poison the target." },
-    
+
     // Ground Type Moves
     { name: "Earthquake", type: "ground", category: "physical", power: 100, accuracy: 100, effect: null, effectChance: 0, description: "The user sets off an earthquake that strikes every Pokémon around it." },
     { name: "Earth Power", type: "ground", category: "special", power: 90, accuracy: 100, effect: "lowers_sp_def", effectChance: 10, description: "The user makes the ground under the target erupt with power. This may also lower the target's Sp. Def stat." },
@@ -238,7 +238,7 @@ const MOVES_DATA = [
     { name: "Scorching Sands", type: "ground", category: "special", power: 70, accuracy: 100, effect: "burn", effectChance: 30, description: "The user throws scorching sand at the target to attack. This may also leave the target with a burn." },
     { name: "Headlong Rush", type: "ground", category: "physical", power: 120, accuracy: 100, effect: "lowers_user_def_spdef", effectChance: 100, description: "The user smashes into the target in a full-body tackle. This also lowers the user's Defense and Sp. Def stats." },
     { name: "Sand Attack", type: "ground", category: "status", power: 0, accuracy: 100, effect: "lowers_accuracy", effectChance: 100, description: "Sand is hurled in the target's face, reducing the target's accuracy." },
-    
+
     // Flying Type Moves
     { name: "Gust", type: "flying", category: "special", power: 40, accuracy: 100, effect: null, effectChance: 0, description: "A gust of wind is whipped up by wings and launched at the target to inflict damage." },
     { name: "Wing Attack", type: "flying", category: "physical", power: 60, accuracy: 100, effect: null, effectChance: 0, description: "The target is struck with large, imposing wings spread wide to inflict damage." },
@@ -257,7 +257,7 @@ const MOVES_DATA = [
     { name: "Dragon Ascent", type: "flying", category: "physical", power: 120, accuracy: 100, effect: "lowers_user_def_spdef", effectChance: 100, description: "After soaring upward, the user attacks its target by dropping out of the sky at high speeds. But it lowers its own Defense and Sp. Def stats." },
     { name: "Dual Wingbeat", type: "flying", category: "physical", power: 40, accuracy: 90, effect: "hits_twice", effectChance: 100, description: "The user slams the target with its wings. The target is hit twice in a row." },
     { name: "Bleakwind Storm", type: "flying", category: "special", power: 100, accuracy: 80, effect: "frostbite", effectChance: 30, description: "The user attacks with savagely cold winds that cause both body and spirit to tremble. This may also leave the target with frostbite." },
-    
+
     // Psychic Type Moves
     { name: "Confusion", type: "psychic", category: "special", power: 50, accuracy: 100, effect: "confusion", effectChance: 10, description: "The target is hit by a weak telekinetic force. This may also confuse the target." },
     { name: "Psychic", type: "psychic", category: "special", power: 90, accuracy: 100, effect: "lowers_sp_def", effectChance: 10, description: "The target is hit by a strong telekinetic force. This may also lower the target's Sp. Def stat." },
@@ -281,7 +281,7 @@ const MOVES_DATA = [
     { name: "Lumina Crash", type: "psychic", category: "special", power: 80, accuracy: 100, effect: "lowers_sp_def_2", effectChance: 100, description: "The user attacks by unleashing a peculiar light that even affects the mind. This also harshly lowers the target's Sp. Def stat." },
     { name: "Twin Beam", type: "psychic", category: "special", power: 40, accuracy: 100, effect: "hits_twice", effectChance: 100, description: "The user shoots mystical beams from its eyes to inflict damage. The target is hit twice in a row." },
     { name: "Mirror Coat", type: "psychic", category: "special", power: 1, accuracy: 100, effect: "counter_special_2x", effectChance: 100, description: "A retaliation move that counters any special attack, inflicting double the damage taken." },
-    
+
     // Bug Type Moves
     { name: "Bug Bite", type: "bug", category: "physical", power: 60, accuracy: 100, effect: "eats_berry", effectChance: 100, description: "The user bites the target. If the target is holding a Berry, the user eats it and gains its effect." },
     { name: "X-Scissor", type: "bug", category: "physical", power: 80, accuracy: 100, effect: null, effectChance: 0, description: "The user slashes at the target by crossing its scythes or claws as if they were a pair of scissors." },
@@ -300,7 +300,7 @@ const MOVES_DATA = [
     { name: "Fell Stinger", type: "bug", category: "physical", power: 50, accuracy: 100, effect: "raises_attack_3_on_ko", effectChance: 100, description: "When the user knocks out a target with this move, the user's Attack stat rises drastically." },
     { name: "Infestation", type: "bug", category: "special", power: 20, accuracy: 100, effect: "trap", effectChance: 100, description: "The target is infested and attacked for four to five turns. The target can't flee during this time." },
     { name: "Skitter Smack", type: "bug", category: "physical", power: 70, accuracy: 90, effect: "lowers_sp_atk", effectChance: 100, description: "The user skitters behind the target to attack. This also lowers the target's Sp. Atk stat." },
-    
+
     // Rock Type Moves
     { name: "Rock Throw", type: "rock", category: "physical", power: 50, accuracy: 90, effect: null, effectChance: 0, description: "The user picks up and throws a small rock at the target to attack." },
     { name: "Rock Slide", type: "rock", category: "physical", power: 75, accuracy: 90, effect: "flinch", effectChance: 30, description: "Large boulders are hurled at opposing Pokémon to inflict damage. This may also make the opposing Pokémon flinch." },
@@ -316,7 +316,7 @@ const MOVES_DATA = [
     { name: "Rollout", type: "rock", category: "physical", power: 30, accuracy: 90, effect: "power_increases_consecutive", effectChance: 100, description: "The user continually rolls into the target over five turns. It becomes more powerful each time it hits." },
     { name: "Meteor Beam", type: "rock", category: "special", power: 120, accuracy: 90, effect: "raises_user_sp_atk_two_turn", effectChance: 100, description: "In this two-turn attack, the user gathers space power and boosts its Sp. Atk stat, then attacks the target on the next turn." },
     { name: "Salt Cure", type: "rock", category: "physical", power: 40, accuracy: 100, effect: "salt_cure", effectChance: 100, description: "The user salt cures the target, inflicting damage every turn. Steel and Water types are more strongly affected by this move." },
-    
+
     // Ghost Type Moves
     { name: "Shadow Ball", type: "ghost", category: "special", power: 80, accuracy: 100, effect: "lowers_sp_def", effectChance: 20, description: "The user hurls a shadowy blob at the target. This may also lower the target's Sp. Def stat." },
     { name: "Shadow Claw", type: "ghost", category: "physical", power: 70, accuracy: 100, effect: "high_critical_hit", effectChance: 100, description: "The user slashes with a sharp claw made from shadows. Critical hits land more easily." },
@@ -337,7 +337,7 @@ const MOVES_DATA = [
     { name: "Infernal Parade", type: "ghost", category: "special", power: 60, accuracy: 100, effect: "burn_power_doubles_if_statused", effectChance: 30, description: "The user attacks with myriad fireballs. This may also leave the target with a burn. This move's power is doubled if the target has a status condition." },
     { name: "Last Respects", type: "ghost", category: "physical", power: 50, accuracy: 100, effect: "power_scales_with_fainted_allies", effectChance: 100, description: "The user attacks to avenge its allies. The more defeated allies there are in the party, the greater the move's power." },
     { name: "Rage Fist", type: "ghost", category: "physical", power: 50, accuracy: 100, effect: "power_scales_with_hits_taken", effectChance: 100, description: "The user converts its rage into energy to attack. The more times the user has been hit by attacks, the greater the move's power." },
-    
+
     // Dragon Type Moves
     { name: "Dragon Claw", type: "dragon", category: "physical", power: 80, accuracy: 100, effect: null, effectChance: 0, description: "The user slashes the target with huge sharp claws." },
     { name: "Dragon Pulse", type: "dragon", category: "special", power: 85, accuracy: 100, effect: null, effectChance: 0, description: "The target is attacked with a shock wave generated by the user's gaping mouth." },
@@ -358,7 +358,7 @@ const MOVES_DATA = [
     { name: "Scale Shot", type: "dragon", category: "physical", power: 25, accuracy: 90, effect: "multi_hit_raises_speed_lowers_def", effectChance: 100, description: "The user attacks by shooting scales two to five times in a row. This move boosts the user's Speed stat but lowers its Defense stat." },
     { name: "Breaking Swipe", type: "dragon", category: "physical", power: 60, accuracy: 100, effect: "lowers_attack", effectChance: 100, description: "The user swings its tough tail wildly and attacks opposing Pokémon. This also lowers their Attack stats." },
     { name: "Fickle Beam", type: "dragon", category: "special", power: 80, accuracy: 100, effect: "power_doubles_30_percent", effectChance: 30, description: "The user shoots a beam of light to inflict damage. Sometimes all the user's heads shoot beams in unison, doubling the move's power." },
-    
+
     // Dark Type Moves
     { name: "Bite", type: "dark", category: "physical", power: 60, accuracy: 100, effect: "flinch", effectChance: 30, description: "The target is bitten with viciously sharp fangs. This may also make the target flinch." },
     { name: "Crunch", type: "dark", category: "physical", power: 80, accuracy: 100, effect: "lowers_defense", effectChance: 20, description: "The user crunches up the target with sharp fangs. This may also lower the target's Defense stat." },
@@ -383,7 +383,7 @@ const MOVES_DATA = [
     { name: "Kowtow Cleave", type: "dark", category: "physical", power: 85, accuracy: 100, effect: "never_misses", effectChance: 100, description: "The user slashes at the target after kowtowing to make the target unable to be on guard. This attack never misses." },
     { name: "Ruination", type: "dark", category: "special", power: 1, accuracy: 90, effect: "halves_hp", effectChance: 100, description: "The user summons a ruinous disaster. This cuts the target's HP in half." },
     { name: "Comeuppance", type: "dark", category: "physical", power: 1, accuracy: 100, effect: "counter_1_5x", effectChance: 100, description: "The user retaliates against the target that last inflicted damage on it. The more damage the user received, the more damage this attack deals." },
-    
+
     // Steel Type Moves
     { name: "Metal Claw", type: "steel", category: "physical", power: 50, accuracy: 95, effect: "raises_user_attack", effectChance: 10, description: "The target is raked with steel claws. This may also raise the user's Attack stat." },
     { name: "Iron Tail", type: "steel", category: "physical", power: 100, accuracy: 75, effect: "lowers_defense", effectChance: 30, description: "The target is slammed with a steel-hard tail. This may also lower the target's Defense stat." },
@@ -409,7 +409,7 @@ const MOVES_DATA = [
     { name: "Make It Rain", type: "steel", category: "special", power: 120, accuracy: 100, effect: "lowers_user_sp_atk", effectChance: 100, description: "The user attacks by throwing out a mass of coins. This also lowers the user's Sp. Atk stat. Money is earned after the battle." },
     { name: "Gigaton Hammer", type: "steel", category: "physical", power: 160, accuracy: 100, effect: "cannot_use_twice", effectChance: 100, description: "The user swings its whole body around to attack with its huge hammer. This move can't be used twice in a row." },
     { name: "Tachyon Cutter", type: "steel", category: "special", power: 50, accuracy: 100, effect: "never_misses_hits_twice", effectChance: 100, description: "The user attacks by launching particle blades at the target twice in a row. This attack never misses." },
-    
+
     // Fairy Type Moves
     { name: "Fairy Wind", type: "fairy", category: "special", power: 40, accuracy: 100, effect: null, effectChance: 0, description: "The user stirs up a fairy wind and strikes the target with it." },
     { name: "Moonblast", type: "fairy", category: "special", power: 95, accuracy: 100, effect: "lowers_sp_atk", effectChance: 30, description: "Borrowing the power of the moon, the user attacks the target. This may also lower the target's Sp. Atk stat." },
@@ -425,7 +425,7 @@ const MOVES_DATA = [
     { name: "Decorate", type: "fairy", category: "status", power: 0, accuracy: 100, effect: "raises_target_atk_sp_atk_2", effectChance: 100, description: "The user sharply raises the target's Attack and Sp. Atk stats by decorating the target." },
     { name: "Springtide Storm", type: "fairy", category: "special", power: 100, accuracy: 80, effect: "lowers_attack", effectChance: 30, description: "The user attacks by wrapping opposing Pokémon in fierce winds brimming with love and hate. This may also lower their Attack stats." },
     { name: "Alluring Voice", type: "fairy", category: "special", power: 80, accuracy: 100, effect: "confusion_if_stat_raised", effectChance: 100, description: "The user attacks the target using its angelic voice. This also confuses the target if its stats have been boosted during the turn." },
-    
+
     // Additional Status and Utility Moves
     { name: "Swords Dance", type: "normal", category: "status", power: 0, accuracy: 100, effect: "raises_user_attack_2", effectChance: 100, description: "A frenetic dance to uplift the fighting spirit. This sharply raises the user's Attack stat." },
     { name: "Dragon Dance", type: "dragon", category: "status", power: 0, accuracy: 100, effect: "raises_user_attack_speed", effectChance: 100, description: "The user vigorously performs a mystic, powerful dance that raises its Attack and Speed stats." },
@@ -483,7 +483,7 @@ const MOVES_DATA = [
     { name: "Destiny Bond", type: "ghost", category: "status", power: 0, accuracy: 100, effect: "destiny_bond", effectChance: 100, description: "After using this move, if the user faints, the Pokémon that landed the knockout blow also faints." },
     { name: "Spite", type: "ghost", category: "status", power: 0, accuracy: 100, effect: "reduce_pp", effectChance: 100, description: "The user unleashes its grudge on the move last used by the target by cutting 4 PP from it." },
     { name: "Perish Song", type: "normal", category: "status", power: 0, accuracy: 100, effect: "perish_song", effectChance: 100, description: "Any Pokémon that hears this song faints in three turns, unless it switches out of battle." },
-    
+
     // Dark - Additional
     { name: "Hone Claws", type: "dark", category: "status", power: 0, accuracy: 100, effect: "raises_user_attack_accuracy", effectChance: 100, description: "The user sharpens its claws to boost its Attack stat and accuracy." },
     { name: "Nasty Plot", type: "dark", category: "status", power: 0, accuracy: 100, effect: "raises_user_sp_atk_2", effectChance: 100, description: "The user stimulates its brain by thinking bad thoughts. This sharply raises the user's Sp. Atk stat." },
@@ -493,14 +493,14 @@ const MOVES_DATA = [
     { name: "Beat Up", type: "dark", category: "physical", power: 10, accuracy: 100, effect: "multi_hit_party_size", effectChance: 100, description: "The user gets all party Pokémon to attack the target. The more party Pokémon, the greater the number of attacks." },
     { name: "Snarl", type: "dark", category: "special", power: 55, accuracy: 95, effect: "lowers_sp_atk", effectChance: 100, description: "The user yells as if it's ranting about something, which lowers the Sp. Atk stats of opposing Pokémon." },
     { name: "Night Daze", type: "dark", category: "special", power: 85, accuracy: 95, effect: "lowers_accuracy", effectChance: 40, description: "The user lets loose a pitch-black shock wave at its target. This may also lower the target's accuracy." },
-    
+
     // Steel - Additional
     { name: "Iron Defense", type: "steel", category: "status", power: 0, accuracy: 100, effect: "raises_user_defense_2", effectChance: 100, description: "The user hardens its body's surface like iron, sharply raising its Defense stat." },
     { name: "Metal Sound", type: "steel", category: "status", power: 0, accuracy: 85, effect: "lowers_sp_def_2", effectChance: 100, description: "A horrible sound like scraping metal harshly lowers the target's Sp. Def stat." },
     { name: "Autotomize", type: "steel", category: "status", power: 0, accuracy: 100, effect: "raises_user_speed_2", effectChance: 100, description: "The user sheds part of its body to make itself lighter and sharply raise its Speed stat." },
     { name: "Shift Gear", type: "steel", category: "status", power: 0, accuracy: 100, effect: "raises_user_attack_speed_2", effectChance: 100, description: "The user rotates its gears, raising its Attack stat and sharply raising its Speed stat." },
     { name: "King's Shield", type: "steel", category: "status", power: 0, accuracy: 100, effect: "protect_lowers_atk_on_contact", effectChance: 100, description: "The user takes a defensive stance while protecting itself from damage. It also lowers the Attack stat of any attacker that makes direct contact." },
-    
+
     // Fairy - Additional
     { name: "Moonlight", type: "fairy", category: "status", power: 0, accuracy: 100, effect: "heals_weather_dependent", effectChance: 100, description: "The user restores its own HP. The amount of HP regained varies with the weather." },
     { name: "Misty Terrain", type: "fairy", category: "status", power: 0, accuracy: 100, effect: "sets_misty_terrain", effectChance: 100, description: "This protects Pokémon on the ground from status conditions and halves damage from Dragon-type moves for five turns." },
@@ -510,16 +510,24 @@ const MOVES_DATA = [
     { name: "Sparkly Swirl", type: "fairy", category: "special", power: 120, accuracy: 85, effect: "cures_party_status", effectChance: 100, description: "The user attacks the target by wrapping it with a whirlwind of an overwhelming scent. This also heals all status conditions of the user's party." }
 ];
 
+const MOVES_BY_NAME = new Map(
+  MOVES_DATA.map((m, idx) => [m.name.toLowerCase(), { ...m, id: idx }])
+);
+
 // Helper function to get move by name
 function getMoveByName(name) {
-    const lowerName = name.toLowerCase();
-    return MOVES_DATA.find(m => m.name.toLowerCase() === lowerName);
+    return MOVES_BY_NAME.get(name.toLowerCase());
+}
+
+function getMoveId(name) {
+  const move = MOVES_BY_NAME.get(name.toLowerCase());
+  return move?.id; // returns undefined if not found
 }
 
 // Helper function to search moves
 function searchMoves(query) {
     const lowerQuery = query.toLowerCase();
-    return MOVES_DATA.filter(m => 
+    return MOVES_DATA.filter(m =>
         m.name.toLowerCase().includes(lowerQuery) ||
         m.type.toLowerCase() === lowerQuery
     );
@@ -538,17 +546,17 @@ function getMovesByType(type) {
  */
 function getMoveEffects(move) {
     if (!move) return [];
-    
+
     // New format: effects array
     if (Array.isArray(move.effects)) {
         return move.effects;
     }
-    
+
     // Legacy format: single effect and effectChance
     if (move.effect && move.effectChance !== undefined) {
         return [{ effect: move.effect, chance: move.effectChance }];
     }
-    
+
     return [];
 }
 
@@ -584,26 +592,26 @@ function getHighestEffectChance(move) {
 function getPrimaryStatusEffect(move) {
     const effects = getMoveEffects(move);
     const statusPriority = ['burn', 'freeze', 'paralysis', 'poison', 'bad_poison', 'sleep', 'confusion', 'flinch'];
-    
+
     // Hidden effects that shouldn't be displayed as primary status
     const hiddenEffects = [
-        'two_turn_move', 'never_misses', 'priority', 'priority_plus2', 
+        'two_turn_move', 'never_misses', 'priority', 'priority_plus2',
         'recharge', 'high_critical_hit', 'user_faints', 'heals_user',
         'power_doubles_when_statused', 'power_doubles_if_ally_fainted',
         'steals_item', 'trap', 'recoil', 'confusion_after', 'always_critical_hit'
     ];
-    
+
     // Filter out hidden effects
     const visibleEffects = effects.filter(e => !hiddenEffects.includes(e.effect));
-    
+
     if (visibleEffects.length === 0) return null;
-    
+
     // Find highest priority status effect
     for (const status of statusPriority) {
         const found = visibleEffects.find(e => e.effect && e.effect.toLowerCase().includes(status));
         if (found) return found;
     }
-    
+
     // Return first visible effect if no status effect found
     return visibleEffects[0];
 }
@@ -629,12 +637,12 @@ function hasSTAB(pokemonTypes, moveType) {
 // Calculate effective power of a move
 function calculateEffectivePower(move, attackerTypes, defenderTypes, includeAccuracy = true) {
     if (!move || move.power === 0 || move.category === 'status') return 0;
-    
+
     const basePower = move.power;
     const stab = hasSTAB(attackerTypes, move.type) ? 1.5 : 1;
     const effectiveness = getEffectiveness(move.type, defenderTypes);
     const accuracy = includeAccuracy ? (move.accuracy / 100) : 1;
-    
+
     return Math.round(basePower * stab * effectiveness * accuracy);
 }
 
@@ -667,18 +675,18 @@ const MOVE_EFFECTS = {
         'raises_user_defense': { stat: 'def', stages: 1, self: true },
         'raises_user_sp_def': { stat: 'spDef', stages: 1, self: true }
     },
-    
+
     // Healing effects - percent of max HP to heal
     healing: {
         'heals_50_percent': { percent: 50 }
     },
-    
+
     // Priority effects - maps effect names to priority brackets
     priority: {
         'priority': 1,
         'priority_plus2': 2
     },
-    
+
     // Stat display names for battle log messages
     statNames: {
         atk: 'Attack',
@@ -694,7 +702,7 @@ const MOVE_EFFECTS = {
 // Get move priority from MOVE_EFFECTS
 function getMovePriority(move) {
     if (!move) return 0;
-    
+
     // Check for priority effects using the centralized definitions
     for (const [effectName, priorityValue] of Object.entries(MOVE_EFFECTS.priority)) {
         if (moveHasEffect(move, effectName)) {
@@ -722,18 +730,18 @@ const NON_CONTACT_PHYSICAL_MOVES = new Set([
 // Check if a move makes contact (relevant for Rough Skin, Iron Barbs, etc.)
 function isContactMove(move) {
     if (!move) return false;
-    
+
     // Status moves are never contact
     if (move.category === 'status') return false;
-    
+
     // Special moves are generally not contact (with rare exceptions we ignore)
     if (move.category === 'special') return false;
-    
+
     // Physical moves are contact unless in the exception list
     if (move.category === 'physical') {
         return !NON_CONTACT_PHYSICAL_MOVES.has(move.name);
     }
-    
+
     return false;
 }
 

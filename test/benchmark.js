@@ -58,13 +58,14 @@ async function benchmarkMinimax(maxDepth = 8) {
             timeMs: duration.toFixed(2),
             nodesPerSec: transpositionEntries > 0 ? Math.round(transpositionEntries / (duration / 1000)) : 'N/A',
             cacheEntries: minimaxState.transpositionTable.size,
+            nodesEvaluated: minimaxState.myProgress.current,
             bestMove: bestAction?.type === 'move' ? bestAction.moveName : bestAction?.type,
             score: bestScore.toFixed(2)
         };
 
         results.push(result);
 
-        console.log(`Depth ${depth}: ${duration.toFixed(2)}ms | Best: ${result.bestMove} (${result.score}) | Cache: ${result.cacheEntries}`);
+        console.log(`Depth ${depth}: ${duration.toFixed(2)}ms | Best: ${result.bestMove} (${result.score}) | Cache: ${result.cacheEntries} | Nodes: ${result.nodesEvaluated}`);
 
         // Stop if taking too long
         if (duration > 10000) {
@@ -119,6 +120,7 @@ async function benchmarkMinimaxAsync(maxDepth = 6) {
     console.log(`Best action: ${recommendation?.type === 'move' ? recommendation.moveName : recommendation?.type}`);
     console.log(`Score: ${recommendation?.score?.toFixed(2)}`);
     console.log(`Final depth: ${recommendation?.depth}`);
+    console.log(`Nodes evaluated: ${recommendation?.nodesEvaluated ?? 0}`);
     console.log(`Cache entries: ${minimaxState.transpositionTable.size}`);
     console.log(`Damage cache: ${minimaxState.damageCache.size}`);
 
@@ -127,6 +129,7 @@ async function benchmarkMinimaxAsync(maxDepth = 6) {
         bestMove: recommendation?.type === 'move' ? recommendation.moveName : recommendation?.type,
         score: recommendation?.score,
         depth: recommendation?.depth,
+        nodesEvaluated: recommendation?.nodesEvaluated ?? 0,
         cacheEntries: minimaxState.transpositionTable.size,
         damageCacheEntries: minimaxState.damageCache.size
     };

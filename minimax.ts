@@ -6,7 +6,7 @@
 // ============================================
 
 interface Pokemon {
-    id: string;
+    id: number;
     name: string;
     types: string[];
     speed: number;
@@ -15,6 +15,7 @@ interface Pokemon {
 }
 
 interface Move {
+    id: number;
     name: string;
     power: number;
     type: string;
@@ -97,6 +98,7 @@ type Action = MoveAction | SwapAction | ChargingReleaseAction | SkipAction;
 type ScoredAction = Action & {
     score: number;
     depth?: number;
+    nodesEvaluated?: number;
 };
 
 interface DamageResult {
@@ -151,7 +153,7 @@ interface MinimaxStateType {
     isCalculating: boolean;
     myProgress: MinimaxProgress;
     currentRecommendation: ScoredAction | null;
-    damageCache: Map<string, DamageResult>;
+    damageCache: Map<number, DamageResult>;
     matchupCache: Map<string, number>;
     transpositionTable: Map<string, number>;
 }
@@ -181,7 +183,7 @@ declare function getMovePriority(move: Move): number;
 const MINIMAX_CONFIG = {
     depth: 6,
     pruningEnabled: true,
-    yieldInterval: 200,
+    yieldInterval: 5000,
     opponentGreedy: true,
     moveOrdering: true
 } as const;
@@ -208,7 +210,8 @@ function clearDamageCache(): void {
 }
 
 function getCachedDamage(move: Move, attacker: Pokemon, defender: Pokemon, options: DamageOptions = {}): DamageResult {
-    const key = `${move.name}-${attacker.id}-${defender.id}}`;
+    // assumes attacker.id, defender.id < 2^16, move.id < 2^16 (65536)
+    const key = (move.id << 32) | (attacker.id << 16) | defender.id;
 
     const cached = minimaxState.damageCache.get(key);
     if (cached) {
@@ -216,11 +219,6 @@ function getCachedDamage(move: Move, attacker: Pokemon, defender: Pokemon, optio
     }
 
     const damage = calculateActualDamage(move, attacker, defender, options);
-
-    if (minimaxState.damageCache.size > 10000) {
-        minimaxState.damageCache.clear();
-    }
-
     minimaxState.damageCache.set(key, damage);
     return damage;
 }
@@ -235,10 +233,6 @@ function getCachedMatchupScore(mySlot: Slot, oppSlot: Slot): number {
 
     const score = calculateMatchupScore(mySlot, oppSlot);
 
-    if (minimaxState.matchupCache.size > 50000) {
-        minimaxState.matchupCache.clear();
-    }
-
     minimaxState.matchupCache.set(key, score);
     return score;
 }
@@ -248,21 +242,30 @@ function getCachedMatchupScore(mySlot: Slot, oppSlot: Slot): number {
 // ============================================
 
 function generateStateKey(simCopy: SimCopy, action: Action, depth: number, isMaximizing: boolean): string {
-    const parts: (string | number)[] = [
-        simCopy.mySlot?.pokemon?.id || 'none',
-        simCopy.oppSlot?.pokemon?.id || 'none',
-        simCopy.myActiveIndex,
-        simCopy.oppActiveIndex,
-        simCopy.myTeamHP.map(hp => Math.round(hp?.current ?? 0)).join(','),
-        simCopy.oppTeamHP.map(hp => Math.round(hp?.current ?? 0)).join(','),
-        simCopy.myCharging?.move?.name || '',
-        simCopy.oppCharging?.move?.name || '',
-        action.type,
-        action.type === ActionType.MOVE ? action.move?.name : (action.type === ActionType.SWAP ? action.swapIndex : ''),
-        depth,
-        isMaximizing ? 1 : 0
-    ];
-    return parts.join('|');
+    let key: string = '';
+    key += simCopy.mySlot?.pokemon?.id + '|';
+    key += simCopy.oppSlot?.pokemon?.id + '|';
+    key += simCopy.myActiveIndex + '|';
+    key += simCopy.oppActiveIndex + '|';
+    key += hpString(simCopy.myTeamHP) + '|';
+    key += hpString(simCopy.oppTeamHP) + '|';
+    key += simCopy.myCharging?.move?.id + '|';
+    key += simCopy.oppCharging?.move?.id + '|';
+    key += action.type + '|';
+    if (action.type === ActionType.MOVE) key += action.move?.id + '|';
+    if (action.type === ActionType.SWAP) key += action.swapIndex + '|';
+    key += depth + '|';
+    key += (isMaximizing ? 1 : 0) + '|';
+    return key;
+}
+
+function hpString(teamHP: (HPData | null)[]) {
+    let s = '';
+    for (let i = 0; i < teamHP.length; i++) {
+        if (i > 0) s += ',';
+        s += Math.round(teamHP[i]?.current ?? 0);
+    }
+    return s;
 }
 
 // ============================================
@@ -427,10 +430,6 @@ function getAllPossibleActions(simCopy: SimCopy, isMaximizing: boolean): Action[
 
         actions.push({ type: ActionType.SWAP, swapIndex: index, swapSlot });
     });
-
-    if (actions.length === 0 && !isFainted) {
-        actions.push({ type: ActionType.SKIP });
-    }
 
     return actions;
 }
@@ -905,9 +904,15 @@ async function getMinimaxRecommendationAsync(team: string, simState: SimState, m
         await new Promise(resolve => setTimeout(resolve, 0));
     }
 
+    const nodesEvaluated = minimaxState.myProgress.current;
+
     minimaxState.isCalculating = false;
     minimaxState.myProgress = { current: 0, total: 0, depth: 0 };
     updateMinimaxProgress('my');
+
+    if (bestAction) {
+        bestAction.nodesEvaluated = nodesEvaluated;
+    }
 
     return bestAction;
 }
@@ -926,9 +931,10 @@ async function minimaxAsync(simCopy: SimCopy, myAction: Action, depth: number, a
         return cached;
     }
 
-    if (minimaxState.transpositionTable.size > 100000) {
-        minimaxState.transpositionTable.clear();
-    }
+    // if (minimaxState.transpositionTable.size > 1000000) {
+    //     console.log("Clearing full minimax cache")
+    //     minimaxState.transpositionTable.clear();
+    // }
 
     let result: number;
 
