@@ -27,6 +27,7 @@ interface Slot {
     ability: string | null;
     teraType: string | null;
     item: string | null;
+    level?: number;
 }
 
 interface HPData {
@@ -57,15 +58,22 @@ interface SimCopy {
     perspective: string;
 }
 
+enum ActionType {
+    MOVE = 'move',
+    SWAP = 'swap',
+    CHARGING_RELEASE = 'charging_release',
+    SKIP = 'skip'
+}
+
 interface MoveAction {
-    type: 'move';
+    type: ActionType.MOVE;
     move: Move;
     moveIndex: number;
     moveName: string;
 }
 
 interface SwapAction {
-    type: 'swap';
+    type: ActionType.SWAP;
     swapIndex: number;
     swapSlot?: Slot;
     pokemon?: Pokemon;
@@ -75,13 +83,13 @@ interface SwapAction {
 }
 
 interface ChargingReleaseAction {
-    type: 'charging_release';
+    type: ActionType.CHARGING_RELEASE;
     move: Move;
     moveName: string;
 }
 
 interface SkipAction {
-    type: 'skip';
+    type: ActionType.SKIP;
 }
 
 type Action = MoveAction | SwapAction | ChargingReleaseAction | SkipAction;
@@ -100,6 +108,8 @@ interface DamageResult {
 }
 
 interface DamageOptions {
+    level?: number;
+    defenderLevel?: number;
     attackerTeraType?: string | null;
     defenderTeraType?: string | null;
     attackerAbility?: string | null;
@@ -142,6 +152,7 @@ interface MinimaxStateType {
     myProgress: MinimaxProgress;
     currentRecommendation: ScoredAction | null;
     damageCache: Map<string, DamageResult>;
+    matchupCache: Map<string, number>;
     transpositionTable: Map<string, number>;
 }
 
@@ -172,8 +183,7 @@ const MINIMAX_CONFIG = {
     pruningEnabled: true,
     yieldInterval: 200,
     opponentGreedy: true,
-    moveOrdering: true,
-    filterBadMoves: true
+    moveOrdering: true
 } as const;
 
 // Track active minimax calculation (only one at a time for my team)
@@ -183,6 +193,7 @@ const minimaxState: MinimaxStateType = {
     myProgress: { current: 0, total: 0, depth: 0 },
     currentRecommendation: null,
     damageCache: new Map(),
+    matchupCache: new Map(),
     transpositionTable: new Map()
 };
 
@@ -192,11 +203,12 @@ const minimaxState: MinimaxStateType = {
 
 function clearDamageCache(): void {
     minimaxState.damageCache.clear();
+    minimaxState.matchupCache.clear();
     minimaxState.transpositionTable.clear();
 }
 
 function getCachedDamage(move: Move, attacker: Pokemon, defender: Pokemon, options: DamageOptions = {}): DamageResult {
-    const key = `${move.name}-${attacker.id}-${defender.id}-${options.attackerTeraType || ''}-${options.defenderTeraType || ''}`;
+    const key = `${move.name}-${attacker.id}-${defender.id}}`;
 
     const cached = minimaxState.damageCache.get(key);
     if (cached) {
@@ -205,12 +217,30 @@ function getCachedDamage(move: Move, attacker: Pokemon, defender: Pokemon, optio
 
     const damage = calculateActualDamage(move, attacker, defender, options);
 
-    if (minimaxState.damageCache.size > 1000) {
+    if (minimaxState.damageCache.size > 10000) {
         minimaxState.damageCache.clear();
     }
 
     minimaxState.damageCache.set(key, damage);
     return damage;
+}
+
+function getCachedMatchupScore(mySlot: Slot, oppSlot: Slot): number {
+    const key = `${mySlot.pokemon?.id}-${oppSlot.pokemon?.id}-${mySlot.moves.join(",")}-${oppSlot.moves.join(",")}`;
+
+    const cached = minimaxState.matchupCache.get(key);
+    if (cached !== undefined) {
+        return cached;
+    }
+
+    const score = calculateMatchupScore(mySlot, oppSlot);
+
+    if (minimaxState.matchupCache.size > 50000) {
+        minimaxState.matchupCache.clear();
+    }
+
+    minimaxState.matchupCache.set(key, score);
+    return score;
 }
 
 // ============================================
@@ -228,7 +258,7 @@ function generateStateKey(simCopy: SimCopy, action: Action, depth: number, isMax
         simCopy.myCharging?.move?.name || '',
         simCopy.oppCharging?.move?.name || '',
         action.type,
-        action.type === 'move' ? action.move?.name : (action.type === 'swap' ? action.swapIndex : ''),
+        action.type === ActionType.MOVE ? action.move?.name : (action.type === ActionType.SWAP ? action.swapIndex : ''),
         depth,
         isMaximizing ? 1 : 0
     ];
@@ -243,15 +273,15 @@ function orderActionsByValue(actions: Action[], simCopy: SimCopy): Action[] {
     return actions.map(action => {
         let priority = 0;
 
-        if (action.type === 'move' && action.move) {
+        if (action.type === ActionType.MOVE && action.move) {
             if (action.move.power > 0) {
                 priority = evaluateGreedyAction(simCopy, action, true);
             } else {
                 priority = -10;
             }
-        } else if (action.type === 'swap') {
+        } else if (action.type === ActionType.SWAP) {
             priority = 10;
-        } else if (action.type === 'charging_release') {
+        } else if (action.type === ActionType.CHARGING_RELEASE) {
             priority = 50;
         }
 
@@ -265,10 +295,12 @@ function evaluateGreedyAction(simCopy: SimCopy, action: Action, isMyAction: bool
     const attacker = isMyAction ? simCopy.mySlot : simCopy.oppSlot;
     const defender = isMyAction ? simCopy.oppSlot : simCopy.mySlot;
 
-    if (action.type === 'move' && action.move) {
+    if (action.type === ActionType.MOVE && action.move) {
         const move = action.move;
         if (move.power > 0 && attacker?.pokemon && defender?.pokemon) {
-            const damage = calculateActualDamage(move, attacker.pokemon, defender.pokemon, {
+            const damage = getCachedDamage(move, attacker.pokemon, defender.pokemon, {
+                level: attacker.level,
+                defenderLevel: defender.level,
                 attackerTeraType: attacker.teraType,
                 defenderTeraType: defender.teraType,
                 attackerAbility: attacker.ability,
@@ -283,7 +315,7 @@ function evaluateGreedyAction(simCopy: SimCopy, action: Action, isMyAction: bool
             }
         }
         return 0;
-    } else if (action.type === 'swap' && action.pokemon) {
+    } else if (action.type === ActionType.SWAP && action.pokemon) {
         const newSlot: Slot = {
             pokemon: action.pokemon,
             moves: action.pokemon.moves || [],
@@ -344,14 +376,14 @@ function createSimStateCopy(simState: SimState, perspective: string): SimCopy {
         oppHP: isMyPerspective ? simState.enemyCurrentHP : simState.myCurrentHP,
         myMaxHP: isMyPerspective ? simState.myMaxHP : simState.enemyMaxHP,
         oppMaxHP: isMyPerspective ? simState.enemyMaxHP : simState.myMaxHP,
-        myTeam: isMyPerspective ? [...state.myTeam] : [...state.enemyTeam],
-        oppTeam: isMyPerspective ? [...state.enemyTeam] : [...state.myTeam],
+        myTeam: isMyPerspective ? [...state.myTeam.slice(0, BATTLE_TEAM_SIZE)] : [...state.enemyTeam.slice(0, BATTLE_TEAM_SIZE)],
+        oppTeam: isMyPerspective ? [...state.enemyTeam.slice(0, BATTLE_TEAM_SIZE)] : [...state.myTeam.slice(0, BATTLE_TEAM_SIZE)],
         myTeamHP: isMyPerspective
-            ? (simState.myTeamHP || []).map(hp => hp ? {...hp} : null)
-            : (simState.enemyTeamHP || []).map(hp => hp ? {...hp} : null),
+            ? (simState.myTeamHP || []).slice(0, BATTLE_TEAM_SIZE).map(hp => hp ? {...hp} : null)
+            : (simState.enemyTeamHP || []).slice(0, BATTLE_TEAM_SIZE).map(hp => hp ? {...hp} : null),
         oppTeamHP: isMyPerspective
-            ? (simState.enemyTeamHP || []).map(hp => hp ? {...hp} : null)
-            : (simState.myTeamHP || []).map(hp => hp ? {...hp} : null),
+            ? (simState.enemyTeamHP || []).slice(0, BATTLE_TEAM_SIZE).map(hp => hp ? {...hp} : null)
+            : (simState.myTeamHP || []).slice(0, BATTLE_TEAM_SIZE).map(hp => hp ? {...hp} : null),
         myActiveIndex: isMyPerspective ? simState.myActiveIndex : simState.enemyActiveIndex,
         oppActiveIndex: isMyPerspective ? simState.enemyActiveIndex : simState.myActiveIndex,
         myCharging: null,
@@ -372,7 +404,7 @@ function getAllPossibleActions(simCopy: SimCopy, isMaximizing: boolean): Action[
     const isFainted = currentHP <= 0;
 
     if (charging && !isFainted) {
-        actions.push({ type: 'charging_release', move: charging.move, moveName: charging.moveName });
+        actions.push({ type: ActionType.CHARGING_RELEASE, move: charging.move, moveName: charging.moveName });
         return actions;
     }
 
@@ -382,22 +414,22 @@ function getAllPossibleActions(simCopy: SimCopy, isMaximizing: boolean): Action[
             if (!moveName) return;
             const move = getMoveByName(moveName);
             if (!move) return;
-            actions.push({ type: 'move', move, moveIndex, moveName });
+            actions.push({ type: ActionType.MOVE, move, moveIndex, moveName });
         });
     }
 
-    team.slice(0, BATTLE_TEAM_SIZE).forEach((swapSlot, index) => {
+    team.forEach((swapSlot, index) => {
         if (!swapSlot || !swapSlot.pokemon) return;
         if (index === activeIndex) return;
 
         const hpData = teamHP[index];
         if (hpData && hpData.current <= 0) return;
 
-        actions.push({ type: 'swap', swapIndex: index, swapSlot });
+        actions.push({ type: ActionType.SWAP, swapIndex: index, swapSlot });
     });
 
     if (actions.length === 0 && !isFainted) {
-        actions.push({ type: 'skip' });
+        actions.push({ type: ActionType.SKIP });
     }
 
     return actions;
@@ -412,11 +444,11 @@ function applyActionToState(simCopy: SimCopy, action: Action, isMyAction: boolea
         oppCharging: simCopy.oppCharging ? {...simCopy.oppCharging} : null
     };
 
-    if (action.type === 'skip') {
+    if (action.type === ActionType.SKIP) {
         return newState;
     }
 
-    if (action.type === 'swap') {
+    if (action.type === ActionType.SWAP) {
         const swapSlot = action.swapSlot || (isMyAction ? simCopy.myTeam : simCopy.oppTeam)[action.swapIndex];
         const swapHP = (isMyAction ? newState.myTeamHP : newState.oppTeamHP)[action.swapIndex];
 
@@ -444,7 +476,7 @@ function applyActionToState(simCopy: SimCopy, action: Action, isMyAction: boolea
         return newState;
     }
 
-    if (action.type === 'move') {
+    if (action.type === ActionType.MOVE) {
         const move = action.move;
         const isTwoTurn = moveHasEffect(move, 'two_turn_move');
 
@@ -474,7 +506,7 @@ function applyActionToState(simCopy: SimCopy, action: Action, isMyAction: boolea
         return applyMoveDamage(newState, move, isMyAction);
     }
 
-    if (action.type === 'charging_release') {
+    if (action.type === ActionType.CHARGING_RELEASE) {
         if (isMyAction) {
             newState.myCharging = null;
         } else {
@@ -498,7 +530,9 @@ function applyMoveDamage(newState: SimCopy, move: Move, isMyAction: boolean): Si
         return newState;
     }
 
-    const damage = calculateActualDamage(move, attacker.pokemon, defender.pokemon, {
+    const damage = getCachedDamage(move, attacker.pokemon, defender.pokemon, {
+        level: attacker.level,
+        defenderLevel: defender.level,
         attackerTeraType: attacker.teraType,
         defenderTeraType: defender.teraType,
         attackerAbility: attacker.ability,
@@ -525,13 +559,13 @@ function applyMoveDamage(newState: SimCopy, move: Move, isMyAction: boolean): Si
     return newState;
 }
 
-function getBestDamageToSlot(attackerSlot: Slot | null, defenderSlot: Slot | null): number {
-    if (!attackerSlot?.pokemon || !defenderSlot?.pokemon) {
+function getBestDamageToSlot(attacker: Slot | null, defender: Slot | null): number {
+    if (!attacker?.pokemon || !defender?.pokemon) {
         return 0;
     }
 
     let bestDamage = 0;
-    const moves = attackerSlot.moves || [];
+    const moves = attacker.moves || [];
 
     for (const moveName of moves) {
         if (!moveName) continue;
@@ -540,12 +574,14 @@ function getBestDamageToSlot(attackerSlot: Slot | null, defenderSlot: Slot | nul
 
         if (moveHasEffect(move, 'two_turn_move')) continue;
 
-        const damage = calculateActualDamage(move, attackerSlot.pokemon, defenderSlot.pokemon, {
-            attackerTeraType: attackerSlot.teraType,
-            defenderTeraType: defenderSlot.teraType,
-            attackerAbility: attackerSlot.ability,
-            defenderAbility: defenderSlot.ability,
-            attackerItem: attackerSlot.item
+        const damage = getCachedDamage(move, attacker.pokemon, defender.pokemon, {
+            level: attacker.level,
+            defenderLevel: defender.level,
+            attackerTeraType: attacker.teraType,
+            defenderTeraType: defender.teraType,
+            attackerAbility: attacker.ability,
+            defenderAbility: defender.ability,
+            attackerItem: attacker.item
         });
 
         if (damage.percentAvg > bestDamage) {
@@ -565,10 +601,10 @@ function applySimultaneousActions(simCopy: SimCopy, myAction: Action, oppAction:
         oppCharging: simCopy.oppCharging ? {...simCopy.oppCharging} : null
     };
 
-    if (myAction.type === 'swap') {
+    if (myAction.type === ActionType.SWAP) {
         newState = applySwapAction(newState, myAction, true);
     }
-    if (oppAction.type === 'swap') {
+    if (oppAction.type === ActionType.SWAP) {
         newState = applySwapAction(newState, oppAction, false);
     }
 
@@ -586,17 +622,17 @@ function applySimultaneousActions(simCopy: SimCopy, myAction: Action, oppAction:
     }
 
     if (myFirst) {
-        if (myAction.type === 'move' || myAction.type === 'charging_release') {
+        if (myAction.type === ActionType.MOVE || myAction.type === ActionType.CHARGING_RELEASE) {
             newState = applyMoveActionSim(newState, myAction, true);
         }
-        if (newState.oppHP > 0 && (oppAction.type === 'move' || oppAction.type === 'charging_release')) {
+        if (newState.oppHP > 0 && (oppAction.type === ActionType.MOVE || oppAction.type === ActionType.CHARGING_RELEASE)) {
             newState = applyMoveActionSim(newState, oppAction, false);
         }
     } else {
-        if (oppAction.type === 'move' || oppAction.type === 'charging_release') {
+        if (oppAction.type === ActionType.MOVE || oppAction.type === ActionType.CHARGING_RELEASE) {
             newState = applyMoveActionSim(newState, oppAction, false);
         }
-        if (newState.myHP > 0 && (myAction.type === 'move' || myAction.type === 'charging_release')) {
+        if (newState.myHP > 0 && (myAction.type === ActionType.MOVE || myAction.type === ActionType.CHARGING_RELEASE)) {
             newState = applyMoveActionSim(newState, myAction, true);
         }
     }
@@ -607,8 +643,8 @@ function applySimultaneousActions(simCopy: SimCopy, myAction: Action, oppAction:
 }
 
 function getSimMovePriority(action: Action): number {
-    if (!action || action.type === 'swap' || action.type === 'skip') return -1;
-    if (action.type === 'move' || action.type === 'charging_release') {
+    if (!action || action.type === ActionType.SWAP || action.type === ActionType.SKIP) return -1;
+    if (action.type === ActionType.MOVE || action.type === ActionType.CHARGING_RELEASE) {
         return getMovePriority(action.move);
     }
     return 0;
@@ -655,7 +691,7 @@ function applyMoveActionSim(simCopy: SimCopy, action: MoveAction | ChargingRelea
     const move = action.move;
     if (!move) return newState;
 
-    if (action.type === 'charging_release') {
+    if (action.type === ActionType.CHARGING_RELEASE) {
         if (isMyAction) {
             newState.myCharging = null;
         } else {
@@ -717,7 +753,7 @@ function getBestSwapForSim(simCopy: SimCopy, isMyTeam: boolean): number {
     let bestIndex = -1;
     let bestHPPercent = -1;
 
-    team.slice(0, BATTLE_TEAM_SIZE).forEach((slot, idx) => {
+    team.forEach((slot, idx) => {
         if (!slot || !slot.pokemon) return;
         if (idx === currentIndex) return;
         const hp = teamHP[idx];
@@ -739,14 +775,14 @@ function getBestSwapForSim(simCopy: SimCopy, isMyTeam: boolean): number {
 
 function isGameOver(simCopy: SimCopy): boolean {
     if (simCopy.myHP <= 0) {
-        const hasAlive = simCopy.myTeamHP.slice(0, BATTLE_TEAM_SIZE).some((hp, idx) =>
+        const hasAlive = simCopy.myTeamHP.some((hp, idx) =>
             hp && hp.current > 0 && idx !== simCopy.myActiveIndex
         );
         if (!hasAlive) return true;
     }
 
     if (simCopy.oppHP <= 0) {
-        const hasAlive = simCopy.oppTeamHP.slice(0, BATTLE_TEAM_SIZE).some((hp, idx) =>
+        const hasAlive = simCopy.oppTeamHP.some((hp, idx) =>
             hp && hp.current > 0 && idx !== simCopy.oppActiveIndex
         );
         if (!hasAlive) return true;
@@ -768,14 +804,14 @@ function evaluateState(simCopy: SimCopy): number {
     let myTeamTotal = 0, myTeamMax = 0;
     let oppTeamTotal = 0, oppTeamMax = 0;
 
-    simCopy.myTeamHP.slice(0, BATTLE_TEAM_SIZE).forEach(hp => {
+    simCopy.myTeamHP.forEach(hp => {
         if (hp) {
             myTeamTotal += hp.current;
             myTeamMax += hp.max;
         }
     });
 
-    simCopy.oppTeamHP.slice(0, BATTLE_TEAM_SIZE).forEach(hp => {
+    simCopy.oppTeamHP.forEach(hp => {
         if (hp) {
             oppTeamTotal += hp.current;
             oppTeamMax += hp.max;
@@ -787,7 +823,7 @@ function evaluateState(simCopy: SimCopy): number {
     score += (myTeamPercent - oppTeamPercent) * 0.5;
 
     if (simCopy.mySlot && simCopy.oppSlot && simCopy.mySlot.pokemon && simCopy.oppSlot.pokemon) {
-        const matchup = calculateMatchupScore(simCopy.mySlot, simCopy.oppSlot);
+        const matchup = getCachedMatchupScore(simCopy.mySlot, simCopy.oppSlot);
         score += (matchup - 50) * 0.3;
     }
 
@@ -850,7 +886,7 @@ async function getMinimaxRecommendationAsync(team: string, simState: SimState, m
         for (const action of orderedActions) {
             let score = await minimaxAsync(simCopy, action, depth - 1, -Infinity, Infinity, false);
 
-            if (action.type === 'move' && action.move && action.move.power > 0) {
+            if (action.type === ActionType.MOVE && action.move && action.move.power > 0) {
                 const immediateDamage = evaluateGreedyAction(simCopy, action, true);
                 score += immediateDamage * 0.001;
             }
@@ -985,7 +1021,7 @@ function getMinimaxRecommendation(team: string, simState: SimState, depth: numbe
     for (const action of actions) {
         let score = minimax(simCopy, action, depth - 1, -Infinity, Infinity, false);
 
-        if (action.type === 'move' && action.move && action.move.power > 0) {
+        if (action.type === ActionType.MOVE && action.move && action.move.power > 0) {
             const immediateDamage = evaluateGreedyAction(simCopy, action, true);
             score += immediateDamage * 0.001;
         }
@@ -1111,14 +1147,14 @@ function showIntermediateRecommendation(team: string, action: ScoredAction, curr
     const className = isCalculating ? 'calculating' : 'recommended-action';
     const swapClass = isCalculating ? 'calculating' : 'recommend-swap';
 
-    if (action.type === 'move') {
+    if (action.type === ActionType.MOVE) {
         const moveBtn = document.querySelector<HTMLElement>(
             `.sim-move-btn[data-team="${team}"][data-move-index="${action.moveIndex}"]`
         );
         if (moveBtn) {
             moveBtn.classList.add(className);
         }
-    } else if (action.type === 'swap') {
+    } else if (action.type === ActionType.SWAP) {
         if (swapBtn) {
             swapBtn.classList.add(swapClass);
         }
@@ -1267,7 +1303,7 @@ function computeBestSwapIndex(simState: SimState, swapOptions: SwapOption[]): nu
         const hpData = simCopy.myTeamHP[index];
         if (!hpData || hpData.current <= 0) continue;
 
-        const swapAction: SwapAction = { type: 'swap', swapIndex: index, swapSlot: slot };
+        const swapAction: SwapAction = { type: ActionType.SWAP, swapIndex: index, swapSlot: slot };
 
         const score = minimax(simCopy, swapAction, 1, -Infinity, Infinity, false);
 
