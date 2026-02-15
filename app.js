@@ -5171,9 +5171,15 @@ function openSimSwapModal(team) {
 
     // Calculate matchup scores for each available swap option (only first 6 - battle team, not bench)
     const swapOptions = [];
+    const teamHP = team === 'my' ? simState.myTeamHP : simState.enemyTeamHP;
     teamData.slice(0, BATTLE_TEAM_SIZE).forEach((slot, index) => {
         if (!slot || !slot.pokemon) return;
         if (index === currentIndex) return; // Can't swap to current
+
+        // Skip fainted Pokemon
+        const hpData = teamHP[index];
+        const currentHP = hpData ? hpData.current : 0;
+        if (currentHP <= 0) return;
 
         // Calculate matchup score against the opponent
         const matchupScore = opponentSlot && opponentSlot.pokemon
@@ -5211,8 +5217,6 @@ function openSimSwapModal(team) {
                 bestIndex = option.index;
             }
         });
-        // Only use matchup fallback if score is reasonable
-        if (bestScore < 50) bestIndex = -1;
     }
 
     let html = '';
