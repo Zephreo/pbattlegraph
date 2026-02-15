@@ -132,7 +132,9 @@
             <div id="simulation-view" class="view">
                 <div class="simulation-container">
                     <!-- Battle Field -->
-                    <div class="simulation-field">
+                    <div class="simulation-field-wrapper">
+                        <!-- Battle Field -->
+                        <div class="simulation-field">
                         <!-- My Pokemon Side -->
                         <div class="sim-pokemon-side my-side">
                             <div class="sim-pokemon-card" id="sim-my-pokemon">
@@ -152,7 +154,8 @@
                             </div>
                         </div>
                     </div>
-                    
+                    </div>
+
                     <!-- Turn Log -->
                     <div class="sim-turn-log" id="sim-turn-log">
                         <!-- Turn results displayed here -->
@@ -414,6 +417,13 @@
                 <!-- Available Pokemon for swap rendered by JS -->
             </div>
         </div>
+    </div>
+
+    <!-- Evaluation Bar (fixed position, outside view hierarchy) -->
+    <div class="sim-eval-bar" id="sim-eval-bar">
+        <div class="eval-bar-fill eval-bar-enemy" id="eval-bar-enemy"></div>
+        <div class="eval-bar-fill eval-bar-my" id="eval-bar-my"></div>
+        <div class="eval-bar-score" id="eval-bar-score">0.0</div>
     </div>
 
     <!-- Scripts -->

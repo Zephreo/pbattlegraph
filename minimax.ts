@@ -1093,6 +1093,10 @@ function minimax(simCopy: SimCopy, myAction: Action, depth: number, alpha: numbe
 function showIntermediateRecommendation(team: string, action: ScoredAction, currentDepth: number, maxDepth: number): void {
     if (team === 'my') {
         minimaxState.currentRecommendation = action;
+        // Update evaluation bar with the score
+        if (action.score !== undefined) {
+            updateEvalBar(action.score);
+        }
     }
 
     document.querySelectorAll<HTMLElement>(`.sim-move-btn[data-team="${team}"]`).forEach(btn => {
@@ -1150,6 +1154,60 @@ function updateMinimaxProgress(team: string): void {
         ? `${(remaining / 1000).toFixed(1)}k`
         : remaining.toString();
     if (text) text.textContent = `Depth ${progress.depth}/${progress.maxDepth} • ${formattedRemaining} nodes`;
+}
+
+function evaluateCurrentSimState(simState: SimState): void {
+    const simCopy = createSimStateCopy(simState, 'my');
+    if (!simCopy.mySlot?.pokemon || !simCopy.oppSlot?.pokemon) {
+        updateEvalBar(0);
+        return;
+    }
+    const score = evaluateState(simCopy);
+    updateEvalBar(score);
+}
+
+function updateEvalBar(score: number): void {
+    const evalBar = document.getElementById('sim-eval-bar');
+    const evalBarEnemy = document.getElementById('eval-bar-enemy');
+    const evalBarMy = document.getElementById('eval-bar-my');
+    const evalBarScore = document.getElementById('eval-bar-score');
+
+    if (!evalBar || !evalBarEnemy || !evalBarMy || !evalBarScore) return;
+
+    // Normalize score to a percentage (0-100)
+    // Score typically ranges from about -300 to +300
+    // Use sigmoid-like function for smooth scaling
+    const maxScore = 200; // Score at which bar is nearly full
+    const normalizedScore = Math.max(-maxScore, Math.min(maxScore, score));
+
+    // Convert to percentage (50% = even, 100% = winning completely)
+    const myPercent = 50 + (normalizedScore / maxScore) * 50;
+    const enemyPercent = 100 - myPercent;
+
+    evalBarEnemy.style.height = `${enemyPercent}%`;
+    evalBarMy.style.height = `${myPercent}%`;
+
+    // Enable animations after first update
+    if (!evalBar.classList.contains('animated')) {
+        requestAnimationFrame(() => {
+            evalBar.classList.add('animated');
+        });
+    }
+
+    // Format score display
+    const displayScore = (score / 100).toFixed(1);
+    const prefix = score > 0 ? '+' : '';
+    evalBarScore.textContent = `${prefix}${displayScore}`;
+
+    // Update score color class
+    evalBarScore.classList.remove('winning', 'losing', 'even');
+    if (score > 10) {
+        evalBarScore.classList.add('winning');
+    } else if (score < -10) {
+        evalBarScore.classList.add('losing');
+    } else {
+        evalBarScore.classList.add('even');
+    }
 }
 
 function updateActionRecommendations(team: string, simState: SimState): void {

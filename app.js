@@ -3824,6 +3824,12 @@ function switchView(view) {
         elements.simulationView.classList.toggle('active', view === 'simulation');
     }
 
+    // Toggle eval bar visibility (it's outside view hierarchy for proper fixed positioning)
+    const evalBar = document.getElementById('sim-eval-bar');
+    if (evalBar) {
+        evalBar.classList.toggle('active', view === 'simulation');
+    }
+
     if (view === 'battle') {
         renderBattleView();
     }
@@ -4150,6 +4156,9 @@ function renderSimulationView() {
 
     // Update selected states on buttons
     updateSimSelectedStates();
+
+    // Evaluate current state immediately for eval bar
+    evaluateCurrentSimState(simState);
 
     // Use minimax to recommend best action for my team only
     // Enemy team uses simple best-move highlighting (already rendered in move panel)
