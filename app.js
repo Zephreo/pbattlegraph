@@ -91,6 +91,11 @@ const elements = {
     enemyTeamNameInput: document.getElementById('enemy-team-name-input'),
     clearEnemyBtn: document.getElementById('clear-enemy-btn'),
 
+    // Import/Export
+    exportTeamsBtn: document.getElementById('export-teams-btn'),
+    importTeamsBtn: document.getElementById('import-teams-btn'),
+    importFileInput: document.getElementById('import-file-input'),
+
     // Modals
     pokemonModal: document.getElementById('pokemon-modal'),
     moveModal: document.getElementById('move-modal'),
@@ -3780,6 +3785,58 @@ function loadSavedTeams() {
     });
 }
 
+function exportTeams() {
+    const data = {
+        savedTeams: getSavedTeams(),
+        currentMyTeam: state.myTeam,
+        currentEnemyTeam: state.enemyTeam,
+        exportDate: new Date().toISOString()
+    };
+
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `pokemon-teams-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function importTeams(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const data = JSON.parse(e.target.result);
+
+            // Import saved teams
+            if (data.savedTeams) {
+                const currentTeams = getSavedTeams();
+                const merged = { ...currentTeams, ...data.savedTeams };
+                localStorage.setItem('pokemonBattleTeams', JSON.stringify(merged));
+                loadSavedTeams();
+            }
+
+            // Load current teams if present
+            if (data.currentMyTeam) {
+                state.myTeam = data.currentMyTeam;
+                renderTeamSlots(false);
+            }
+            if (data.currentEnemyTeam) {
+                state.enemyTeam = data.currentEnemyTeam;
+                renderTeamSlots(true);
+            }
+
+            updateBattleMatrix();
+            alert(`Imported ${Object.keys(data.savedTeams || {}).length} saved teams`);
+        } catch (err) {
+            alert('Failed to import: ' + err.message);
+        }
+    };
+    reader.readAsText(file);
+}
+
 function loadLastSelectedTeams() {
     const savedTeams = getSavedTeams();
 
@@ -3859,6 +3916,16 @@ function setupEventListeners() {
     elements.saveEnemyBtn.addEventListener('click', () => saveTeam(true));
     elements.loadEnemySelect.addEventListener('change', (e) => loadTeam(e.target.value, true));
     elements.clearEnemyBtn.addEventListener('click', clearEnemyTeam);
+
+    // Import/Export
+    elements.exportTeamsBtn.addEventListener('click', exportTeams);
+    elements.importTeamsBtn.addEventListener('click', () => elements.importFileInput.click());
+    elements.importFileInput.addEventListener('change', (e) => {
+        if (e.target.files[0]) {
+            importTeams(e.target.files[0]);
+            e.target.value = '';
+        }
+    });
 
     // Accuracy toggle
     elements.includeAccuracyCheckbox.addEventListener('change', (e) => {

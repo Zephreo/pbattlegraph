@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimax Benchmark Tests</title>
+    <style>
+        body {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background: #1a1a2e;
+            color: #eee;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 { color: #4ecdc4; }
+        h2 { color: #ff6b6b; margin-top: 30px; }
+        .test-output {
+            background: #16213e;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            white-space: pre-wrap;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .pass { color: #4ecd84; }
+        .fail { color: #ff6b6b; }
+        .info { color: #ffd93d; }
+        button {
+            background: #4ecdc4;
+            color: #1a1a2e;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+        }
+        button:hover { background: #45b7aa; }
+        button:disabled { background: #666; cursor: not-allowed; }
+        .summary {
+            background: #0f3460;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            padding: 8px 12px;
+            text-align: left;
+            border-bottom: 1px solid #333;
+        }
+        th { background: #16213e; color: #4ecdc4; }
+        tr:hover { background: #1a1a3e; }
+    </style>
+</head>
+<body>
+    <h1>Minimax Algorithm Benchmark</h1>
+
+    <div>
+        <button onclick="runAllBenchmarks()">Run All Benchmarks</button>
+        <button onclick="runQuickBenchmark()">Quick Test (Depth 4)</button>
+        <button onclick="runDepthBenchmark()">Depth Scaling Test</button>
+        <button onclick="runConfigComparison()">Config Comparison</button>
+        <button onclick="clearOutput()">Clear Output</button>
+        <button onclick="copyOutput()">Copy Output</button>
+    </div>
+
+    <details style="margin-top: 15px;">
+        <summary style="cursor: pointer; color: #4ecdc4;">Import Team Data</summary>
+        <p style="font-size: 12px; color: #888;">Use the Export button in the main app, then import the file here:</p>
+        <input type="file" id="file-import" accept=".json" style="margin: 8px 0;">
+        <button onclick="importFromFile()">Import from File</button>
+        <hr style="border-color: #333; margin: 10px 0;">
+        <p style="font-size: 12px; color: #888;">Or paste JSON directly:</p>
+        <textarea id="team-import" rows="3" style="width: 100%; background: #16213e; color: #eee; border: 1px solid #333; border-radius: 4px; padding: 8px; font-family: monospace;" placeholder="Paste team JSON here..."></textarea>
+        <button onclick="importTeamData()">Import from Text</button>
+    </details>
+
+    <h2>Test Output</h2>
+    <div id="output" class="test-output">Click a button to run benchmarks...</div>
+
+    <div id="summary" class="summary" style="display: none;">
+        <h2>Results Summary</h2>
+        <div id="summary-content"></div>
+    </div>
+
+    <!-- Load app dependencies -->
+    <script src="../data/type-chart.js"></script>
+    <script src="../data/pokemon.js"></script>
+    <script src="../data/moves.js"></script>
+    <script src="../data/abilities.js"></script>
+    <script src="../data/items.js"></script>
+    <script src="../app.js"></script>
+    <script src="../minimax.js"></script>
+
+    <script>
+        // Override console.log to display in page
+        const outputEl = document.getElementById('output');
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalTable = console.table;
+
+        function log(msg, className = '') {
+            const line = document.createElement('div');
+            line.className = className;
+            line.textContent = typeof msg === 'object' ? JSON.stringify(msg, null, 2) : msg;
+            outputEl.appendChild(line);
+            outputEl.scrollTop = outputEl.scrollHeight;
+            originalLog(msg);
+        }
+
+        console.log = (...args) => log(args.join(' '));
+        console.error = (...args) => log(args.join(' '), 'fail');
+        console.table = (data) => {
+            if (Array.isArray(data)) {
+                const table = document.createElement('table');
+                const headers = Object.keys(data[0] || {});
+
+                const headerRow = document.createElement('tr');
+                headers.forEach(h => {
+                    const th = document.createElement('th');
+                    th.textContent = h;
+                    headerRow.appendChild(th);
+                });
+                table.appendChild(headerRow);
+
+                data.forEach(row => {
+                    const tr = document.createElement('tr');
+                    headers.forEach(h => {
+                        const td = document.createElement('td');
+                        td.textContent = row[h];
+                        tr.appendChild(td);
+                    });
+                    table.appendChild(tr);
+                });
+
+                outputEl.appendChild(table);
+            }
+            originalTable(data);
+        };
+
+        function clearOutput() {
+            outputEl.innerHTML = '';
+            document.getElementById('summary').style.display = 'none';
+        }
+
+        function copyOutput() {
+            const text = outputEl.innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                log('Output copied to clipboard!', 'pass');
+            }).catch(err => {
+                log('Failed to copy: ' + err.message, 'fail');
+            });
+        }
+
+        // Import from file (exported from main app)
+        function importFromFile() {
+            const fileInput = document.getElementById('file-import');
+            const file = fileInput.files[0];
+            if (!file) {
+                log('No file selected', 'fail');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    // Handle export format from main app
+                    if (data.currentMyTeam) {
+                        state.myTeam = data.currentMyTeam;
+                        log(`Imported My Team: ${data.currentMyTeam.filter(s => s?.pokemon).map(s => s.pokemon.name).join(', ')}`, 'pass');
+                    }
+                    if (data.currentEnemyTeam) {
+                        state.enemyTeam = data.currentEnemyTeam;
+                        log(`Imported Enemy Team: ${data.currentEnemyTeam.filter(s => s?.pokemon).map(s => s.pokemon.name).join(', ')}`, 'pass');
+                    }
+                    // Also handle direct format
+                    if (data.myTeam && !data.currentMyTeam) {
+                        state.myTeam = data.myTeam;
+                        log(`Imported My Team: ${data.myTeam.filter(s => s?.pokemon).map(s => s.pokemon.name).join(', ')}`, 'pass');
+                    }
+                    if (data.enemyTeam && !data.currentEnemyTeam) {
+                        state.enemyTeam = data.enemyTeam;
+                        log(`Imported Enemy Team: ${data.enemyTeam.filter(s => s?.pokemon).map(s => s.pokemon.name).join(', ')}`, 'pass');
+                    }
+                    localStorage.setItem('testImportedTeams', JSON.stringify({myTeam: state.myTeam, enemyTeam: state.enemyTeam}));
+                    log('Teams imported and saved!', 'pass');
+                } catch (err) {
+                    log('Failed to parse file: ' + err.message, 'fail');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // Import team data from pasted JSON
+        function importTeamData() {
+            const textarea = document.getElementById('team-import');
+            const json = textarea.value.trim();
+            if (!json) {
+                log('No data to import', 'fail');
+                return;
+            }
+            try {
+                const data = JSON.parse(json);
+                if (data.myTeam) {
+                    state.myTeam = data.myTeam;
+                    log(`Imported My Team: ${data.myTeam.filter(s => s?.pokemon).map(s => s.pokemon.name).join(', ')}`, 'pass');
+                }
+                if (data.enemyTeam) {
+                    state.enemyTeam = data.enemyTeam;
+                    log(`Imported Enemy Team: ${data.enemyTeam.filter(s => s?.pokemon).map(s => s.pokemon.name).join(', ')}`, 'pass');
+                }
+                // Save to localStorage so it persists
+                localStorage.setItem('testImportedTeams', json);
+                log('Teams imported and saved!', 'pass');
+            } catch (e) {
+                log('Failed to parse JSON: ' + e.message, 'fail');
+            }
+        }
+
+        // Try to load previously imported teams on page load
+        function loadImportedTeams() {
+            try {
+                const saved = localStorage.getItem('testImportedTeams');
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    if (data.myTeam) state.myTeam = data.myTeam;
+                    if (data.enemyTeam) state.enemyTeam = data.enemyTeam;
+
+                    log('Loaded previously imported teams:', 'pass');
+                    const myNames = state.myTeam.filter(s => s?.pokemon).map(s => s.pokemon.name).join(', ');
+                    const enemyNames = state.enemyTeam.filter(s => s?.pokemon).map(s => s.pokemon.name).join(', ');
+                    log(`My Pokemon: ${myNames || '(none)'}`);
+                    log(`Enemy Pokemon: ${enemyNames || '(none)'}`);
+                    return true;
+                }
+            } catch (e) {}
+            return false;
+        }
+
+        // Convert saved team format { pokemon: [...] } to runtime format [{ pokemon, moves, ... }]
+        function convertSavedTeam(savedTeam) {
+            if (!savedTeam || !savedTeam.pokemon) return null;
+            return savedTeam.pokemon.map(slot => {
+                if (!slot || !slot.id) return null;
+                return {
+                    pokemon: slot, // The slot itself contains pokemon data (id, name, hp, etc.)
+                    moves: slot.moves || [],
+                    ability: slot.ability || null,
+                    item: slot.item || null,
+                    teraType: slot.teraType || null
+                };
+            });
+        }
+
+        // Load saved state from main app's localStorage
+        function loadSavedState() {
+            try {
+                const savedTeams = JSON.parse(localStorage.getItem('pokemonBattleTeams') || '{}');
+                const lastMyTeam = localStorage.getItem('lastSelectedMyTeam');
+                const lastEnemyTeam = localStorage.getItem('lastSelectedEnemyTeam');
+
+                let loaded = false;
+
+                // Load my team
+                if (lastMyTeam && savedTeams[lastMyTeam]) {
+                    const converted = convertSavedTeam(savedTeams[lastMyTeam]);
+                    if (converted) {
+                        state.myTeam = converted;
+                        log(`Loaded My Team: "${lastMyTeam}"`, 'pass');
+                        loaded = true;
+                    }
+                }
+
+                // Load enemy team
+                if (lastEnemyTeam && savedTeams[lastEnemyTeam]) {
+                    const converted = convertSavedTeam(savedTeams[lastEnemyTeam]);
+                    if (converted) {
+                        state.enemyTeam = converted;
+                        log(`Loaded Enemy Team: "${lastEnemyTeam}"`, 'pass');
+                        loaded = true;
+                    }
+                }
+
+                if (loaded) {
+                    const myNames = state.myTeam.filter(s => s?.pokemon).map(s => s.pokemon.name).join(', ');
+                    const enemyNames = state.enemyTeam.filter(s => s?.pokemon).map(s => s.pokemon.name).join(', ');
+                    log(`My Pokemon: ${myNames || '(none)'}`);
+                    log(`Enemy Pokemon: ${enemyNames || '(none)'}`);
+                    return true;
+                }
+
+                // List available teams if none loaded
+                const teamNames = Object.keys(savedTeams);
+                if (teamNames.length > 0) {
+                    log(`Available saved teams: ${teamNames.join(', ')}`, 'info');
+                    log('No team currently selected. Select teams in main app first.', 'info');
+                }
+            } catch (e) {
+                console.error('Failed to load saved state:', e);
+            }
+            return false;
+        }
+
+        // Create mock simulation state for testing
+        function createMockSimState() {
+            // Try to load imported teams first, then saved state
+            if (!loadImportedTeams() && !loadSavedState()) {
+                // Fallback to mock data if no saved state
+                const testPokemon1 = POKEMON_DATA.find(p => p.name === 'Dragonite') || POKEMON_DATA[0];
+                const testPokemon2 = POKEMON_DATA.find(p => p.name === 'Tyranitar') || POKEMON_DATA[1];
+
+                if (!testPokemon1 || !testPokemon2) {
+                    console.error('Could not find test Pokemon in data');
+                    return null;
+                }
+
+                state.myTeam = [{
+                    pokemon: testPokemon1,
+                    moves: ['Outrage', 'Earthquake', 'Dragon Dance', 'Extreme Speed'],
+                    ability: 'Multiscale',
+                    item: 'Choice Band',
+                    teraType: 'Normal'
+                }];
+
+                state.enemyTeam = [{
+                    pokemon: testPokemon2,
+                    moves: ['Stone Edge', 'Crunch', 'Earthquake', 'Ice Punch'],
+                    ability: 'Sand Stream',
+                    item: 'Leftovers',
+                    teraType: 'Dark'
+                }];
+
+                log('Using fallback mock Pokemon (no saved state found)', 'info');
+            }
+
+            // Get first Pokemon with data from each team
+            const mySlot = state.myTeam.find(s => s?.pokemon);
+            const enemySlot = state.enemyTeam.find(s => s?.pokemon);
+
+            if (!mySlot || !enemySlot) {
+                console.error('Need at least one Pokemon on each team');
+                return null;
+            }
+
+            const myHP = mySlot.pokemon.hp;
+            const enemyHP = enemySlot.pokemon.hp;
+
+            // Build team HP arrays
+            const myTeamHP = state.myTeam.map(slot =>
+                slot?.pokemon ? { current: slot.pokemon.hp, max: slot.pokemon.hp } : null
+            );
+            const enemyTeamHP = state.enemyTeam.map(slot =>
+                slot?.pokemon ? { current: slot.pokemon.hp, max: slot.pokemon.hp } : null
+            );
+
+            return {
+                myActiveIndex: state.myTeam.indexOf(mySlot),
+                enemyActiveIndex: state.enemyTeam.indexOf(enemySlot),
+                myCurrentHP: myHP,
+                enemyCurrentHP: enemyHP,
+                myMaxHP: myHP,
+                enemyMaxHP: enemyHP,
+                myTeamHP,
+                enemyTeamHP
+            };
+        }
+
+        // Benchmark functions
+        async function runQuickBenchmark() {
+            clearOutput();
+            log('='.repeat(60));
+            log('QUICK BENCHMARK (Depth 4)');
+            log('='.repeat(60));
+
+            const mockState = createMockSimState();
+            if (!mockState) return;
+
+            window.simState = mockState;
+            const simCopy = createSimStateCopy(mockState, 'my');
+            log(`My Pokemon: ${simCopy.mySlot.pokemon.name}`);
+            log(`Opponent: ${simCopy.oppSlot.pokemon.name}`);
+            log('');
+
+            clearDamageCache();
+
+            const startTime = performance.now();
+            const result = await getMinimaxRecommendationAsync('my', mockState, 4);
+            const duration = performance.now() - startTime;
+
+            log('');
+            log(`Time: ${duration.toFixed(2)}ms`, 'pass');
+            log(`Best move: ${result?.type === 'move' ? result.moveName : result?.type}`, 'info');
+            log(`Score: ${result?.score?.toFixed(2)}`, 'info');
+            log(`Final depth: ${result?.depth}`, 'info');
+            log(`Cache entries: ${minimaxState.transpositionTable.size}`, 'info');
+        }
+
+        async function runDepthBenchmark() {
+            clearOutput();
+            log('='.repeat(60));
+            log('DEPTH SCALING BENCHMARK');
+            log('='.repeat(60));
+
+            const mockState = createMockSimState();
+            if (!mockState) return;
+
+            window.simState = mockState;
+            const simCopy = createSimStateCopy(mockState, 'my');
+
+            log(`My Pokemon: ${simCopy.mySlot.pokemon.name}`);
+            log(`Opponent: ${simCopy.oppSlot.pokemon.name}`);
+            log(`Config: pruning=${MINIMAX_CONFIG.pruningEnabled}, greedy=${MINIMAX_CONFIG.opponentGreedy}`);
+            log('='.repeat(60));
+            log('');
+
+            const results = [];
+
+            for (let depth = 1; depth <= 10; depth++) {
+                clearDamageCache();
+
+                const startTime = performance.now();
+                const result = await getMinimaxRecommendationAsync('my', mockState, depth);
+                const duration = performance.now() - startTime;
+
+                const row = {
+                    depth,
+                    timeMs: duration.toFixed(2),
+                    cacheEntries: minimaxState.transpositionTable.size,
+                    bestMove: result?.type === 'move' ? result.moveName : result?.type,
+                    score: result?.score?.toFixed(2)
+                };
+
+                results.push(row);
+                log(`Depth ${depth}: ${duration.toFixed(2)}ms | ${row.bestMove} (${row.score})`);
+
+                if (duration > 10000) {
+                    log('Stopping - exceeded 10s threshold', 'fail');
+                    break;
+                }
+            }
+
+            log('');
+            log('Results Table:');
+            console.table(results);
+
+            showSummary(results);
+        }
+
+        async function runConfigComparison() {
+            clearOutput();
+            log('='.repeat(60));
+            log('CONFIG COMPARISON BENCHMARK (Depth 4)');
+            log('='.repeat(60));
+
+            const mockState = createMockSimState();
+            if (!mockState) return;
+
+            window.simState = mockState;
+            const depth = 4;
+
+            const configs = [
+                { name: 'Full optimizations', pruning: true, greedy: true, moveOrdering: true },
+                { name: 'No pruning', pruning: false, greedy: true, moveOrdering: true },
+                { name: 'No move ordering', pruning: true, greedy: true, moveOrdering: false },
+                { name: 'No greedy opponent', pruning: true, greedy: false, moveOrdering: true }
+            ];
+
+            const results = [];
+
+            for (const config of configs) {
+                const originalPruning = MINIMAX_CONFIG.pruningEnabled;
+                const originalGreedy = MINIMAX_CONFIG.opponentGreedy;
+                const originalMoveOrdering = MINIMAX_CONFIG.moveOrdering;
+
+                MINIMAX_CONFIG.pruningEnabled = config.pruning;
+                MINIMAX_CONFIG.opponentGreedy = config.greedy;
+                MINIMAX_CONFIG.moveOrdering = config.moveOrdering;
+
+                clearDamageCache();
+
+                const startTime = performance.now();
+                const result = await getMinimaxRecommendationAsync('my', mockState, depth);
+                const duration = performance.now() - startTime;
+
+                results.push({
+                    config: config.name,
+                    timeMs: duration.toFixed(2),
+                    cacheEntries: minimaxState.transpositionTable.size,
+                    bestMove: result?.type === 'move' ? result.moveName : result?.type
+                });
+
+                log(`${config.name}: ${duration.toFixed(2)}ms`);
+
+                MINIMAX_CONFIG.pruningEnabled = originalPruning;
+                MINIMAX_CONFIG.opponentGreedy = originalGreedy;
+                MINIMAX_CONFIG.moveOrdering = originalMoveOrdering;
+
+                if (duration > 30000) {
+                    log('Stopping - too slow', 'fail');
+                    break;
+                }
+            }
+
+            log('');
+            console.table(results);
+        }
+
+        async function runAllBenchmarks() {
+            await runQuickBenchmark();
+            log('\n\n');
+            await runDepthBenchmark();
+            log('\n\n');
+            await runConfigComparison();
+        }
+
+        function showSummary(results) {
+            const summaryEl = document.getElementById('summary');
+            const contentEl = document.getElementById('summary-content');
+
+            if (results.length > 1) {
+                const first = parseFloat(results[0].timeMs);
+                const last = parseFloat(results[results.length - 1].timeMs);
+                const scalingFactor = (last / first).toFixed(1);
+
+                contentEl.innerHTML = `
+                    <p><strong>Depth 1:</strong> ${results[0].timeMs}ms</p>
+                    <p><strong>Max Depth (${results[results.length-1].depth}):</strong> ${results[results.length-1].timeMs}ms</p>
+                    <p><strong>Scaling Factor:</strong> ${scalingFactor}x</p>
+                    <p><strong>Consistent Best Move:</strong> ${results.every(r => r.bestMove === results[0].bestMove) ? 'Yes' : 'No'}</p>
+                `;
+                summaryEl.style.display = 'block';
+            }
+        }
+
+        // Auto-run on load if requested via URL param
+        if (window.location.search.includes('autorun')) {
+            window.onload = runAllBenchmarks;
+        }
+    </script>
+</body>
+</html>
