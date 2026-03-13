@@ -1134,18 +1134,37 @@ function searchPokemon(query) {
     );
 }
 
-// Get sprite URL for a Pokemon - uses PokeAPI sprites
+// Get sprite URL for a Pokemon - uses PokemonDB sprites
 function getSpriteUrl(pokemonId) {
     const pokemon = POKEMON_DATA.find(p => p.id === pokemonId);
     if (!pokemon) {
-        return 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png'; // Fallback
+        return 'https://img.pokemondb.net/sprites/home/normal/bulbasaur.png'; // Fallback
     }
 
     // For regional forms (ID >= 10000), use the base form's sprite
-    let spriteId = pokemonId;
+    let spritePokemon = pokemon;
     if (pokemon.baseId) {
-        spriteId = pokemon.baseId;
+        spritePokemon = POKEMON_DATA.find(p => p.id === pokemon.baseId) || pokemon;
     }
 
-    return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${spriteId}.png`;
+    // Convert name to PokemonDB slug format
+    let slug = spritePokemon.name
+        .toLowerCase()
+        .replace(/♀/g, '-f')
+        .replace(/♂/g, '-m')
+        .replace(/'/g, '')
+        .replace(/'/g, '')
+        .replace(/\.\s/g, '-')
+        .replace(/\./g, '')
+        .replace(/:\s/g, '-')
+        .replace(/:/g, '-')
+        .replace(/\s+/g, '-')
+        .replace(/é/g, 'e');
+
+    // Remove double hyphens
+    while (slug.includes('--')) {
+        slug = slug.replace('--', '-');
+    }
+
+    return `https://img.pokemondb.net/sprites/home/normal/${slug}.png`;
 }
