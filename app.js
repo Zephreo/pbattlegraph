@@ -4500,7 +4500,7 @@ function importTeams(file) {
                 renderTeamSlots(true);
             }
 
-            updateBattleMatrix();
+            renderCombinedMatrix();
             alert(`Imported ${Object.keys(data.savedTeams || {}).length} saved teams`);
         } catch (err) {
             alert('Failed to import: ' + err.message);
