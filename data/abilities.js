@@ -86,6 +86,7 @@ const ABILITIES_DATA = [
     { name: "Poison Point", effect: "none", description: "May poison on contact" },
     { name: "Static", effect: "none", description: "May paralyze on contact" },
     { name: "Flame Body", effect: "none", description: "May burn on contact" },
+    { name: "Cute Charm", effect: "none", description: "May infatuate on contact" },
     { name: "Synchronize", effect: "none", description: "Passes status to attacker" },
     { name: "Clear Body", effect: "none", description: "Prevents stat drops" },
     { name: "White Smoke", effect: "none", description: "Prevents stat drops" },
@@ -106,6 +107,7 @@ const ABILITIES_DATA = [
     { name: "Chlorophyll", effect: "none", description: "Doubles Speed in sun" },
     { name: "Sand Rush", effect: "none", description: "Doubles Speed in sand" },
     { name: "Slush Rush", effect: "none", description: "Doubles Speed in snow" },
+    { name: "Snow Cloak", effect: "none", description: "Raises evasion in snow" },
     { name: "Magic Guard", effect: "none", description: "Only takes direct damage" },
     { name: "Magic Bounce", effect: "none", description: "Reflects status moves" },
     { name: "Unaware", effect: "none", description: "Ignores stat changes" },
@@ -264,14 +266,29 @@ function abilityBlocksEffect(ability, effectName) {
     return false;
 }
 
+// Items that inflict a status condition on the holder
+const STATUS_INDUCING_ITEMS = ['flame orb', 'toxic orb'];
+
+// Check if an item causes a status condition
+function itemCausesStatus(item) {
+    if (!item) return false;
+    const itemName = (typeof item === 'string' ? item : item.name || '').toLowerCase();
+    return STATUS_INDUCING_ITEMS.includes(itemName);
+}
+
 // Apply status-based ability stat modifiers
 // Returns multiplier for the specified stat when Pokemon is statused
-function getStatusAbilityStatMultiplier(ability, stat, hasStatus) {
-    if (!ability || !hasStatus) return 1;
-    
+// heldItem parameter allows automatic status detection for Flame Orb/Toxic Orb
+function getStatusAbilityStatMultiplier(ability, stat, hasStatus, heldItem = null) {
+    if (!ability) return 1;
+
+    // Check if Pokemon has status from either explicit status or status-inducing item
+    const effectivelyStatused = hasStatus || itemCausesStatus(heldItem);
+    if (!effectivelyStatused) return 1;
+
     const abilityData = typeof ability === 'string' ? getAbilityByName(ability) : ability;
     if (!abilityData) return 1;
-    
+
     switch (abilityData.effect) {
         case 'marvel_scale':
             // Marvel Scale: 1.5x Defense when statused
@@ -280,7 +297,7 @@ function getStatusAbilityStatMultiplier(ability, stat, hasStatus) {
             }
             break;
     }
-    
+
     return 1;
 }
 

@@ -1589,6 +1589,7 @@ function renderCombinedMatrix() {
                             attackerAbility: mySlot.ability,
                             defenderAbility: enemySlot.ability,
                             attackerItem: mySlot.item,
+                            defenderItem: enemySlot.item,
                             weather: weather,
                             fieldEffect: fieldEffect
                         });
@@ -1690,6 +1691,7 @@ function renderCombinedMatrix() {
                             attackerAbility: enemySlot.ability,
                             defenderAbility: mySlot.ability,
                             attackerItem: enemySlot.item,
+                            defenderItem: mySlot.item,
                             weather: weather,
                             fieldEffect: fieldEffect
                         });
@@ -1773,6 +1775,7 @@ function renderCombinedMatrix() {
                             defenderTeraType: mySlot.teraType,
                             attackerAbility: enemySlot.ability,
                             defenderAbility: mySlot.ability,
+                            defenderItem: mySlot.item,
                             weather: weather,
                             fieldEffect: fieldEffect
                         });
@@ -2047,7 +2050,8 @@ function calculateMatchupScore(mySlot, enemySlot) {
                 defenderTeraType: enemySlot.teraType,
                 attackerAbility: mySlot.ability,
                 defenderAbility: enemySlot.ability,
-                attackerItem: mySlot.item
+                attackerItem: mySlot.item,
+                defenderItem: enemySlot.item
             });
             if (damage.percentAvg > myBestDamagePercent) {
                 myBestDamagePercent = damage.percentAvg;
@@ -2068,7 +2072,8 @@ function calculateMatchupScore(mySlot, enemySlot) {
                 defenderTeraType: enemySlot.teraType,
                 attackerAbility: mySlot.ability,
                 defenderAbility: enemySlot.ability,
-                attackerItem: mySlot.item
+                attackerItem: mySlot.item,
+                defenderItem: enemySlot.item
             });
             if (damage.percentAvg > myBestDamagePercent) {
                 myBestDamagePercent = damage.percentAvg;
@@ -2089,7 +2094,8 @@ function calculateMatchupScore(mySlot, enemySlot) {
                 defenderTeraType: mySlot.teraType,
                 attackerAbility: enemySlot.ability,
                 defenderAbility: mySlot.ability,
-                attackerItem: enemySlot.item
+                attackerItem: enemySlot.item,
+                defenderItem: mySlot.item
             });
             if (damage.percentAvg > enemyBestDamagePercent) {
                 enemyBestDamagePercent = damage.percentAvg;
@@ -2108,7 +2114,8 @@ function calculateMatchupScore(mySlot, enemySlot) {
                 defenderTeraType: mySlot.teraType,
                 attackerAbility: enemySlot.ability,
                 defenderAbility: mySlot.ability,
-                attackerItem: enemySlot.item
+                attackerItem: enemySlot.item,
+                defenderItem: mySlot.item
             });
             if (damage.percentAvg > enemyBestDamagePercent) {
                 enemyBestDamagePercent = damage.percentAvg;
@@ -3585,6 +3592,7 @@ function calculateActualDamage(move, attacker, defender, options = {}) {
         attackerAbility = null,
         defenderAbility = null,
         attackerItem = null,
+        defenderItem = null,
         weather = 'none',
         fieldEffect = 'none',          // For special rooms (wonderroom, magicroom, trickroom)
         isCritical = false,
@@ -3630,10 +3638,10 @@ function calculateActualDamage(move, attacker, defender, options = {}) {
     const finalAttack = Math.floor(attackStat * attackMultiplier);
     let finalDefense = Math.floor(defenseStat * defenseMultiplier);
 
-    // Apply status-based ability modifiers (e.g., Marvel Scale boosts Defense when statused)
-    if (defenderAbility && defenderStatus) {
+    // Apply status-based ability modifiers (e.g., Marvel Scale boosts Defense when statused or holding Flame Orb/Toxic Orb)
+    if (defenderAbility) {
         const statType = isPhysical ? 'defense' : 'spDef';
-        const abilityDefenseMultiplier = getStatusAbilityStatMultiplier(defenderAbility, statType, true);
+        const abilityDefenseMultiplier = getStatusAbilityStatMultiplier(defenderAbility, statType, !!defenderStatus, defenderItem);
         finalDefense = Math.floor(finalDefense * abilityDefenseMultiplier);
     }
 
