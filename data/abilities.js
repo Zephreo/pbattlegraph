@@ -72,7 +72,8 @@ const ABILITIES_DATA = [
     { name: "Teravolt", effect: "mold_breaker", description: "Ignores target's ability" },
     { name: "Turboblaze", effect: "mold_breaker", description: "Ignores target's ability" },
     { name: "Neutralizing Gas", effect: "neutralize", description: "Suppresses all abilities" },
-    
+    { name: "Stance Change", effect: "stance_change", description: "Changes to Blade Forme when attacking, Shield Forme when using King's Shield" },
+
     // No effect (for common abilities)
     { name: "None", effect: "none", description: "No ability" },
     { name: "Overgrow", effect: "none", description: "Boosts Grass moves when HP is low" },
@@ -88,12 +89,19 @@ const ABILITIES_DATA = [
     { name: "Synchronize", effect: "none", description: "Passes status to attacker" },
     { name: "Clear Body", effect: "none", description: "Prevents stat drops" },
     { name: "White Smoke", effect: "none", description: "Prevents stat drops" },
+    { name: "Hyper Cutter", effect: "none", description: "Prevents Attack from being lowered" },
     { name: "Pressure", effect: "none", description: "Opponent uses extra PP" },
     { name: "Speed Boost", effect: "none", description: "Raises Speed each turn" },
-    { name: "Drought", effect: "none", description: "Summons harsh sunlight" },
-    { name: "Drizzle", effect: "none", description: "Summons rain" },
-    { name: "Sand Stream", effect: "none", description: "Summons sandstorm" },
-    { name: "Snow Warning", effect: "none", description: "Summons snow/hail" },
+    { name: "Drought", effect: "weather", weather: "sun", description: "Summons harsh sunlight" },
+    { name: "Drizzle", effect: "weather", weather: "rain", description: "Summons rain" },
+    { name: "Sand Stream", effect: "weather", weather: "sand", description: "Summons sandstorm" },
+    { name: "Snow Warning", effect: "weather", weather: "snow", description: "Summons snow/hail" },
+    { name: "Orichalcum Pulse", effect: "weather", weather: "sun", description: "Summons harsh sunlight" },
+    { name: "Grassy Surge", effect: "terrain", terrain: "grassy", description: "Summons Grassy Terrain" },
+    { name: "Electric Surge", effect: "terrain", terrain: "electric", description: "Summons Electric Terrain" },
+    { name: "Psychic Surge", effect: "terrain", terrain: "psychic", description: "Summons Psychic Terrain" },
+    { name: "Misty Surge", effect: "terrain", terrain: "misty", description: "Summons Misty Terrain" },
+    { name: "Hadron Engine", effect: "terrain", terrain: "electric", description: "Summons Electric Terrain" },
     { name: "Swift Swim", effect: "none", description: "Doubles Speed in rain" },
     { name: "Chlorophyll", effect: "none", description: "Doubles Speed in sun" },
     { name: "Sand Rush", effect: "none", description: "Doubles Speed in sand" },
@@ -306,6 +314,174 @@ function applyPostAttackAbilityEffects(move, attackerAbility, defenderAbility) {
     // e.g., Poison Point, Static, Flame Body contact status effects
     // e.g., Color Change type changing
     // e.g., Aftermath explosion damage
-    
+
+    return effects;
+}
+
+// Weather effect data
+const WEATHER_EFFECTS = {
+    sun: {
+        boost: { type: "fire", multiplier: 1.5 },
+        weaken: { type: "water", multiplier: 0.5 }
+    },
+    rain: {
+        boost: { type: "water", multiplier: 1.5 },
+        weaken: { type: "fire", multiplier: 0.5 }
+    },
+    sand: {
+        // Sandstorm boosts Rock-type Sp.Def by 1.5x (stat-based, not move damage)
+        // No direct move damage modifiers
+    },
+    snow: {
+        // Snow boosts Ice-type Defense by 1.5x (stat-based, not move damage)
+        // No direct move damage modifiers
+    }
+};
+
+// Terrain effect data
+const TERRAIN_EFFECTS = {
+    grassy: {
+        boost: { type: "grass", multiplier: 1.3 },
+        weaken: { types: ["ground"], moveNames: ["earthquake", "bulldoze", "magnitude"], multiplier: 0.5 }
+    },
+    electric: {
+        boost: { type: "electric", multiplier: 1.3 }
+    },
+    psychic: {
+        boost: { type: "psychic", multiplier: 1.3 }
+    },
+    misty: {
+        weaken: { type: "dragon", multiplier: 0.5 }
+    }
+};
+
+// Get weather set by an ability
+function getWeatherFromAbility(ability) {
+    if (!ability) return null;
+    const abilityData = typeof ability === 'string' ? getAbilityByName(ability) : ability;
+    if (!abilityData || abilityData.effect !== 'weather') return null;
+    return abilityData.weather;
+}
+
+// Get terrain set by an ability
+function getTerrainFromAbility(ability) {
+    if (!ability) return null;
+    const abilityData = typeof ability === 'string' ? getAbilityByName(ability) : ability;
+    if (!abilityData || abilityData.effect !== 'terrain') return null;
+    return abilityData.terrain;
+}
+
+// Apply weather effects to move damage
+// @param {string} weather - The active weather (sun, rain, sand, snow)
+// @param {string} moveType - The type of the move being used
+// @param {number} baseMultiplier - The base damage multiplier
+// @returns {number} The modified damage multiplier
+function applyWeatherToMove(weather, moveType, baseMultiplier = 1) {
+    if (!weather || !moveType) return baseMultiplier;
+
+    const weatherEffect = WEATHER_EFFECTS[weather.toLowerCase()];
+    if (!weatherEffect) return baseMultiplier;
+
+    const type = moveType.toLowerCase();
+
+    // Check for boost
+    if (weatherEffect.boost && weatherEffect.boost.type === type) {
+        return baseMultiplier * weatherEffect.boost.multiplier;
+    }
+
+    // Check for weaken
+    if (weatherEffect.weaken && weatherEffect.weaken.type === type) {
+        return baseMultiplier * weatherEffect.weaken.multiplier;
+    }
+
+    return baseMultiplier;
+}
+
+// Apply terrain effects to move damage
+// @param {string} terrain - The active terrain (grassy, electric, psychic, misty)
+// @param {Object} move - The move being used (needs type and optionally name)
+// @param {number} baseMultiplier - The base damage multiplier
+// @param {boolean} attackerGrounded - Whether the attacker is grounded (default true)
+// @param {boolean} defenderGrounded - Whether the defender is grounded (default true)
+// @returns {number} The modified damage multiplier
+function applyTerrainToMove(terrain, move, baseMultiplier = 1, attackerGrounded = true, defenderGrounded = true) {
+    if (!terrain || !move) return baseMultiplier;
+
+    const terrainEffect = TERRAIN_EFFECTS[terrain.toLowerCase()];
+    if (!terrainEffect) return baseMultiplier;
+
+    const moveType = (move.type || '').toLowerCase();
+    const moveName = (move.name || '').toLowerCase();
+
+    // Terrain boosts only apply if attacker is grounded
+    if (attackerGrounded && terrainEffect.boost && terrainEffect.boost.type === moveType) {
+        baseMultiplier *= terrainEffect.boost.multiplier;
+    }
+
+    // Terrain weakening (Grassy Terrain halves ground moves, Misty halves Dragon)
+    if (terrainEffect.weaken) {
+        const weaken = terrainEffect.weaken;
+
+        // Check if move type matches
+        const typeMatches = weaken.type === moveType ||
+                           (weaken.types && weaken.types.includes(moveType));
+
+        // Check if move name matches (for specific moves like Earthquake)
+        const nameMatches = weaken.moveNames && weaken.moveNames.includes(moveName);
+
+        // Grassy terrain only weakens specific ground moves, not all ground moves
+        if (terrain.toLowerCase() === 'grassy') {
+            // Only weaken if defender is grounded AND move is in the specific list
+            if (defenderGrounded && nameMatches) {
+                baseMultiplier *= weaken.multiplier;
+            }
+        } else if (defenderGrounded && typeMatches) {
+            // For Misty Terrain, weaken all Dragon moves against grounded targets
+            baseMultiplier *= weaken.multiplier;
+        }
+    }
+
+    return baseMultiplier;
+}
+
+// Get weather/terrain multiplier description for display
+function getFieldEffectDescription(weather, terrain, moveType, moveName) {
+    const effects = [];
+    const type = (moveType || '').toLowerCase();
+    const name = (moveName || '').toLowerCase();
+
+    if (weather) {
+        const weatherEffect = WEATHER_EFFECTS[weather.toLowerCase()];
+        if (weatherEffect) {
+            if (weatherEffect.boost && weatherEffect.boost.type === type) {
+                effects.push(`${weather} boosts ${type} (×${weatherEffect.boost.multiplier})`);
+            }
+            if (weatherEffect.weaken && weatherEffect.weaken.type === type) {
+                effects.push(`${weather} weakens ${type} (×${weatherEffect.weaken.multiplier})`);
+            }
+        }
+    }
+
+    if (terrain) {
+        const terrainEffect = TERRAIN_EFFECTS[terrain.toLowerCase()];
+        if (terrainEffect) {
+            if (terrainEffect.boost && terrainEffect.boost.type === type) {
+                effects.push(`${terrain} terrain boosts ${type} (×${terrainEffect.boost.multiplier})`);
+            }
+            if (terrainEffect.weaken) {
+                const weaken = terrainEffect.weaken;
+                if (weaken.type === type || (weaken.types && weaken.types.includes(type))) {
+                    if (terrain.toLowerCase() === 'grassy' && weaken.moveNames) {
+                        if (weaken.moveNames.includes(name)) {
+                            effects.push(`grassy terrain weakens ${name} (×${weaken.multiplier})`);
+                        }
+                    } else {
+                        effects.push(`${terrain} terrain weakens ${type} (×${weaken.multiplier})`);
+                    }
+                }
+            }
+        }
+    }
+
     return effects;
 }

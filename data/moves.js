@@ -102,6 +102,8 @@ const MOVES_DATA = [
     { name: "Wave Crash", type: "water", category: "physical", power: 120, accuracy: 100, effect: "recoil", effectChance: 100, description: "The user shrouds itself in water and slams into the target with its whole body to inflict damage. This also damages the user quite a lot." },
     { name: "Jet Punch", type: "water", category: "physical", power: 60, accuracy: 100, effect: "priority", effectChance: 100, description: "The user summons a torrent around its fist and punches at blinding speed. This move always goes first." },
     { name: "Flip Turn", type: "water", category: "physical", power: 60, accuracy: 100, effect: "switch_out", effectChance: 100, description: "After making its attack, the user rushes back to switch places with a party Pokémon in waiting." },
+    { name: "Water Pulse", type: "water", category: "special", power: 60, accuracy: 100, effect: "confusion", effectChance: 20, description: "The user attacks the target with a pulsing blast of water. This may also confuse the target." },
+    { name: "Aqua Step", type: "water", category: "physical", power: 80, accuracy: 100, effect: "raises_user_speed", effectChance: 100, description: "The user toys with the target and attacks it using light and fluid dance steps. This also boosts the user's Speed stat." },
 
     // Electric Type Moves
     { name: "Thunder Shock", type: "electric", category: "special", power: 40, accuracy: 100, effect: "paralysis", effectChance: 10, description: "A jolt of electricity crashes down on the target to inflict damage. This may also leave the target with paralysis." },
@@ -131,6 +133,7 @@ const MOVES_DATA = [
     { name: "Double Shock", type: "electric", category: "physical", power: 120, accuracy: 100, effect: "lose_electric_type", effectChance: 100, description: "The user discharges all the electricity from its body to perform a high-damage attack. After using this move, the user will no longer be Electric type." },
 
     // Grass Type Moves
+    { name: "Branch Poke", type: "grass", category: "physical", power: 40, accuracy: 100, effect: null, effectChance: 0, description: "The user attacks the target by poking it with a sharply pointed branch." },
     { name: "Vine Whip", type: "grass", category: "physical", power: 45, accuracy: 100, effect: null, effectChance: 0, description: "The target is struck with slender, whiplike vines to inflict damage." },
     { name: "Razor Leaf", type: "grass", category: "physical", power: 55, accuracy: 95, effect: "high_critical_hit", effectChance: 100, description: "Sharp-edged leaves are launched to slash at opposing Pokémon. Critical hits land more easily." },
     { name: "Solar Beam", type: "grass", category: "special", power: 120, accuracy: 100, effect: "two_turn_move", effectChance: 100, description: "In this two-turn attack, the user gathers light, then blasts a bundled beam on the next turn." },
@@ -179,6 +182,7 @@ const MOVES_DATA = [
     // Fighting Type Moves
     { name: "Karate Chop", type: "fighting", category: "physical", power: 50, accuracy: 100, effect: "high_critical_hit", effectChance: 100, description: "The target is attacked with a sharp chop. Critical hits land more easily." },
     { name: "Low Kick", type: "fighting", category: "physical", power: 1, accuracy: 100, effect: "power_scales_with_weight", effectChance: 100, description: "A powerful low kick that makes the target fall over. The heavier the target, the greater the move's power." },
+    { name: "Low Sweep", type: "fighting", category: "physical", power: 65, accuracy: 100, effect: "lowers_speed", effectChance: 100, description: "The user makes a swift attack on the target's legs, which lowers the target's Speed stat." },
     { name: "Brick Break", type: "fighting", category: "physical", power: 75, accuracy: 100, effect: "breaks_screens", effectChance: 100, description: "The user attacks with a swift chop. It can also break barriers, such as Light Screen and Reflect." },
     { name: "Cross Chop", type: "fighting", category: "physical", power: 100, accuracy: 80, effect: "high_critical_hit", effectChance: 100, description: "The user delivers a double chop with its forearms crossed. Critical hits land more easily." },
     { name: "Close Combat", type: "fighting", category: "physical", power: 120, accuracy: 100, effect: "lowers_user_def_spdef", effectChance: 100, description: "The user fights the target up close without guarding itself. This also lowers the user's Defense and Sp. Def stats." },
@@ -201,6 +205,7 @@ const MOVES_DATA = [
     { name: "Body Press", type: "fighting", category: "physical", power: 80, accuracy: 100, effect: "uses_user_defense", effectChance: 100, description: "The user attacks by slamming its body into the target. The higher the user's Defense, the more damage it can inflict on the target." },
     { name: "Thunderous Kick", type: "fighting", category: "physical", power: 90, accuracy: 100, effect: "lowers_defense", effectChance: 100, description: "The user overwhelms the target with lightning-like movement before delivering a kick. This also lowers the target's Defense stat." },
     { name: "Collision Course", type: "fighting", category: "physical", power: 100, accuracy: 100, effect: "super_effective_boost", effectChance: 100, description: "The user transforms and crashes down onto the target. This move's power is boosted more than usual if it's a supereffective hit." },
+    { name: "Quick Guard", type: "fighting", category: "status", power: 0, accuracy: 100, effect: "protect_priority", effectChance: 100, description: "The user protects itself and its allies from priority moves." },
 
     // Poison Type Moves
     { name: "Poison Sting", type: "poison", category: "physical", power: 15, accuracy: 100, effect: "poison", effectChance: 30, description: "The user stabs the target with a poisonous stinger. This may also poison the target." },
@@ -281,6 +286,7 @@ const MOVES_DATA = [
     { name: "Lumina Crash", type: "psychic", category: "special", power: 80, accuracy: 100, effect: "lowers_sp_def_2", effectChance: 100, description: "The user attacks by unleashing a peculiar light that even affects the mind. This also harshly lowers the target's Sp. Def stat." },
     { name: "Twin Beam", type: "psychic", category: "special", power: 40, accuracy: 100, effect: "hits_twice", effectChance: 100, description: "The user shoots mystical beams from its eyes to inflict damage. The target is hit twice in a row." },
     { name: "Mirror Coat", type: "psychic", category: "special", power: 1, accuracy: 100, effect: "counter_special_2x", effectChance: 100, description: "A retaliation move that counters any special attack, inflicting double the damage taken." },
+    { name: "Rest", type: "psychic", category: "status", power: 0, accuracy: 100, effect: "full_heal_sleep", effectChance: 100, description: "The user goes to sleep for two turns. This fully restores the user's HP and heals any status conditions." },
 
     // Bug Type Moves
     { name: "Bug Bite", type: "bug", category: "physical", power: 60, accuracy: 100, effect: "eats_berry", effectChance: 100, description: "The user bites the target. If the target is holding a Berry, the user eats it and gains its effect." },
@@ -303,6 +309,7 @@ const MOVES_DATA = [
 
     // Rock Type Moves
     { name: "Rock Throw", type: "rock", category: "physical", power: 50, accuracy: 90, effect: null, effectChance: 0, description: "The user picks up and throws a small rock at the target to attack." },
+    { name: "Rock Tomb", type: "rock", category: "physical", power: 60, accuracy: 95, effect: "lowers_speed", effectChance: 100, description: "Boulders are hurled at the target. This also lowers the target's Speed stat by preventing its movement." },
     { name: "Rock Slide", type: "rock", category: "physical", power: 75, accuracy: 90, effect: "flinch", effectChance: 30, description: "Large boulders are hurled at opposing Pokémon to inflict damage. This may also make the opposing Pokémon flinch." },
     { name: "Stone Edge", type: "rock", category: "physical", power: 100, accuracy: 80, effect: "high_critical_hit", effectChance: 100, description: "The user stabs the target from below with sharpened stones. Critical hits land more easily." },
     { name: "Rock Blast", type: "rock", category: "physical", power: 25, accuracy: 90, effect: "multi_hit_2_to_5", effectChance: 100, description: "The user hurls hard rocks at the target. Two to five rocks are launched in a row." },
@@ -316,6 +323,7 @@ const MOVES_DATA = [
     { name: "Rollout", type: "rock", category: "physical", power: 30, accuracy: 90, effect: "power_increases_consecutive", effectChance: 100, description: "The user continually rolls into the target over five turns. It becomes more powerful each time it hits." },
     { name: "Meteor Beam", type: "rock", category: "special", power: 120, accuracy: 90, effect: "raises_user_sp_atk_two_turn", effectChance: 100, description: "In this two-turn attack, the user gathers space power and boosts its Sp. Atk stat, then attacks the target on the next turn." },
     { name: "Salt Cure", type: "rock", category: "physical", power: 40, accuracy: 100, effect: "salt_cure", effectChance: 100, description: "The user salt cures the target, inflicting damage every turn. Steel and Water types are more strongly affected by this move." },
+    { name: "Rock Polish", type: "rock", category: "status", power: 0, accuracy: 100, effect: "raises_user_speed_2", effectChance: 100, description: "The user polishes its body to reduce drag. This sharply raises the Speed stat." },
 
     // Ghost Type Moves
     { name: "Shadow Ball", type: "ghost", category: "special", power: 80, accuracy: 100, effect: "lowers_sp_def", effectChance: 20, description: "The user hurls a shadowy blob at the target. This may also lower the target's Sp. Def stat." },
