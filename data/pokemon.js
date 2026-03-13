@@ -1134,38 +1134,18 @@ function searchPokemon(query) {
     );
 }
 
-// Get sprite URL for a Pokemon - uses local sprites folder
+// Get sprite URL for a Pokemon - uses PokeAPI sprites
 function getSpriteUrl(pokemonId) {
     const pokemon = POKEMON_DATA.find(p => p.id === pokemonId);
     if (!pokemon) {
-        return 'sprites/0001_bulbasaur.png'; // Fallback
+        return 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png'; // Fallback
     }
-    
+
     // For regional forms (ID >= 10000), use the base form's sprite
     let spriteId = pokemonId;
-    let spritePokemon = pokemon;
-    
     if (pokemon.baseId) {
         spriteId = pokemon.baseId;
-        spritePokemon = POKEMON_DATA.find(p => p.id === pokemon.baseId) || pokemon;
     }
-    
-    // Pad ID to 4 digits
-    const paddedId = spriteId.toString().padStart(4, '0');
-    
-    // Convert name to sprite filename format:
-    // - Lowercase
-    // - Replace spaces with hyphens
-    // - Handle special characters (Mr. Mime -> mr-mime, Nidoran♀ -> nidoran-f, etc.)
-    let spriteName = spritePokemon.name
-        .toLowerCase()
-        .replace(/\s+/g, '-')      // Spaces to hyphens
-        .replace(/\./g, '')         // Remove periods (Mr. -> Mr)
-        .replace(/'/g, '')          // Remove apostrophes (Farfetch'd -> farfetchd)
-        .replace(/♀/g, '-f')        // Female symbol
-        .replace(/♂/g, '-m')        // Male symbol
-        .replace(/:/g, '')          // Remove colons
-        .replace(/é/g, 'e');        // Accent e
-    
-    return `sprites/${paddedId}_${spriteName}.png`;
+
+    return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${spriteId}.png`;
 }
